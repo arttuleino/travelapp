@@ -5,7 +5,8 @@ import { Pressable, Text, View } from 'react-native';
 import { ChatView } from '@/components/chat-view';
 import { useAuth } from '@/lib/auth';
 import { markConversationRead, sendMessage, useConversation, useMembers } from '@/lib/chat';
-import { useMembership, useTripClock } from '@/lib/trip';
+import { deviceTimeZone, deviceToday } from '@/lib/time';
+import { useMembership } from '@/lib/trip';
 import { mergeFeed } from '@/lib/unread';
 import { space, usePalette } from '@/theme';
 
@@ -15,7 +16,6 @@ export default function Conversation() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { trip } = useMembership();
   const me = useAuth().session?.user.id ?? '';
-  const clock = useTripClock(trip.timezone);
   const { messages } = useConversation(id);
   const traveller = useMembers(trip.id).find((m) => m.id === id);
   const latest = messages.at(-1)?.created_at;
@@ -41,8 +41,8 @@ export default function Conversation() {
       }
       feed={mergeFeed(messages, [])}
       me={me}
-      timeZone={trip.timezone}
-      today={clock.date}
+      timeZone={deviceTimeZone()}
+      today={deviceToday()}
       onSend={(body) => sendMessage(id, body)}
       placeholder={`Vastaa: ${traveller?.display_name ?? ''}`}
       empty="Ei vielä viestejä tämän varauksen kanssa."

@@ -5,7 +5,8 @@ import { Timeline } from '@/components/timeline';
 import { Body, Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { signOut } from '@/lib/auth';
 import { useLatestAnnouncement, useMembership, useProgramme, useTripClock } from '@/lib/trip';
-import { formatDay, formatRange, tripDays } from '@/lib/time';
+import { deviceTimeZone, formatDay, formatRange, tripDays } from '@/lib/time';
+import { clockTime } from '@/lib/unread';
 import { space, usePalette } from '@/theme';
 
 export default function Now() {
@@ -50,7 +51,7 @@ export default function Now() {
           <Body>{notice.body}</Body>
           <Muted>
             {notice.author_name ? `${notice.author_name}, ` : ''}
-            {new Date(notice.send_at).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit', timeZone: trip.timezone })}
+            {clockTime(notice.send_at, deviceTimeZone())}
             {notice.edited_at ? ' · muokattu' : ''}
           </Muted>
         </View>

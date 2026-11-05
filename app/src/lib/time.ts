@@ -104,3 +104,13 @@ export function zonedTimeToUtc(date: string, time: string, timeZone: string): st
   }
   return new Date(guess).toISOString();
 }
+
+/** The phone's own time zone. Message and announcement times are shown in it; the programme stays in destination time. */
+export function deviceTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+/** Today's date on the phone (real clock, not the demo clock), for chat day labels. */
+export function deviceToday(): string {
+  return tripClock(deviceTimeZone(), new Date()).date;
+}
