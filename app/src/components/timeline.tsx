@@ -23,6 +23,8 @@ export function Timeline({ items, nowTime, past, onEdit }: Props) {
 
   return (
     <View>
+      {/* Programme times are always the destination's wall-clock time. */}
+      <Text style={{ color: c.muted, fontSize: 12, marginBottom: 6 }}>Kellonajat paikallista aikaa (Local Time)</Text>
       {items.map((it, i) => {
         const isPast = past || (nowTime != null && i < now);
         const isNow = nowTime != null && i === now;
