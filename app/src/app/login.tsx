@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 import { Body, Button, Card, Field, H1, Muted, Screen } from '@/components/ui';
-import { sendCode, verifyCode } from '@/lib/auth';
+import { sendCode, signInWithPassword, verifyCode } from '@/lib/auth';
+import { PASSWORD_LOGIN } from '@/lib/supabase';
 import { space } from '@/theme';
 
 const FEATURES = [
@@ -13,9 +14,10 @@ const FEATURES = [
 ];
 
 export default function Login() {
-  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'password'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +47,25 @@ export default function Login() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function submitPassword() {
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithPassword(email, password);
+    } catch {
+      setError('Sähköposti tai salasana on väärä.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function backToEmail() {
+    setStep('email');
+    setCode('');
+    setPassword('');
+    setError(null);
   }
 
   return (
@@ -78,6 +99,45 @@ export default function Login() {
             />
             <Muted>Käytä samaa sähköpostiosoitetta, jonka annoit varausta tehdessäsi. Lähetämme siihen kirjautumiskoodin.</Muted>
             <Button label="Lähetä koodi" onPress={submitEmail} disabled={!validEmail} busy={busy} style={{ alignSelf: 'flex-start' }} />
+            {PASSWORD_LOGIN ? (
+              <Button
+                label="Testitunnus: kirjaudu salasanalla"
+                variant="ghost"
+                small
+                onPress={() => {
+                  setStep('password');
+                  setError(null);
+                }}
+                style={{ alignSelf: 'flex-start' }}
+              />
+            ) : null}
+          </View>
+        ) : step === 'password' ? (
+          <View style={styles.form}>
+            <Field
+              label="Sähköposti"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+            />
+            <Field
+              label="Salasana"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={() => validEmail && password && submitPassword()}
+              error={error}
+            />
+            <View style={{ flexDirection: 'row', gap: space.s, flexWrap: 'wrap' }}>
+              <Button label="Kirjaudu sisään" onPress={submitPassword} disabled={!validEmail || !password} busy={busy} />
+              <Button label="Takaisin" variant="ghost" onPress={backToEmail} />
+            </View>
           </View>
         ) : (
           <View style={styles.form}>
@@ -97,15 +157,7 @@ export default function Login() {
             />
             <View style={{ flexDirection: 'row', gap: space.s, flexWrap: 'wrap' }}>
               <Button label="Kirjaudu sisään" onPress={submitCode} disabled={code.length !== 6} busy={busy} />
-              <Button
-                label="Vaihda osoite"
-                variant="ghost"
-                onPress={() => {
-                  setStep('email');
-                  setCode('');
-                  setError(null);
-                }}
-              />
+              <Button label="Vaihda osoite" variant="ghost" onPress={backToEmail} />
             </View>
           </View>
         )}

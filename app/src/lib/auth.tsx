@@ -33,6 +33,12 @@ export async function verifyCode(email: string, code: string) {
   if (error) throw error;
 }
 
+/** Test accounts only: sign in with a password set in the Supabase dashboard. */
+export async function signInWithPassword(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) throw error;
+}
+
 export async function signOut() {
   await unregisterPush().catch(() => {});
   await supabase.auth.signOut();

@@ -60,6 +60,10 @@ npx expo start               # avaa selaimessa painamalla w, puhelimessa Expo Go
 
 Kirjaudu esimerkkimatkalle osoitteella `traveller@example.com` (matkustaja) tai `guide@example.com` (opas). Kirjautumiskoodi tulee paikalliseen postilaatikkoon osoitteessa http://127.0.0.1:54324. Esimerkkimatka on helmikuussa 2027, joten `.env.example` asettaa sovelluksen kellon matkan kolmanteen päivään (`EXPO_PUBLIC_DEMO_NOW`). Poista rivi, kun käytät oikeita matkoja.
 
+## Testitunnukset ilman sähköpostia
+
+Kun `EXPO_PUBLIC_PASSWORD_LOGIN=1`, kirjautumissivulla näkyy "Testitunnus: kirjaudu salasanalla". Luo tunnukset Supabasessa: Authentication → Users → Add user → Create new user, käytä samaa sähköpostia kuin `trip_members`-taulussa ja valitse Auto Confirm User. Oikeassa käytössä asetus pidetään pois päältä, ja kirjautuminen tapahtuu sähköpostikoodilla.
+
 ## Matkan tuonti
 
 Ennen varausjärjestelmän rajapintaa matkat tuodaan kolmesta CSV-tiedostosta (pilkku tai puolipiste, päivämäärät muodossa 15.2.2027 tai 2027-02-15). Mallit ovat kansiossa `app/scripts/example-trip/`.
