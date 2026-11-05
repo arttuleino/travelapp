@@ -1,24 +1,23 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { LanguageChips } from '@/components/language-picker';
 import { Body, Button, Card, Field, H1, Muted, Screen } from '@/components/ui';
-import { sendCode, signInWithPassword, verifyCode } from '@/lib/auth';
-import { PASSWORD_LOGIN } from '@/lib/supabase';
+import { sendCode, signInDemo, signInWithPassword, verifyCode } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n';
+import { DEMO_MODE, PASSWORD_LOGIN } from '@/lib/supabase';
 import { space } from '@/theme';
 
-const FEATURES = [
-  'Maksa matka, tee lisävarauksia ja muutoksia varaukseesi.',
-  'Seuraa viikon ohjelmaa ja näe heti, jos aikataulu muuttuu.',
-  'Näe tiedot lennoistasi, majoituksestasi ja matkakohteestasi.',
-  'Keskustele oppaasi kanssa matkan aikana.',
-];
+const FEATURES = ['feature1', 'feature2', 'feature3', 'feature4'] as const;
 
 export default function Login() {
+  const { t } = useI18n();
   const [step, setStep] = useState<'email' | 'code' | 'password'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState<'traveller' | 'guide' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -30,7 +29,7 @@ export default function Login() {
       await sendCode(email);
       setStep('code');
     } catch {
-      setError('Koodin lähettäminen ei onnistunut. Tarkista osoite ja yritä hetken päästä uudelleen.');
+      setError(t('sendCodeFailed'));
     } finally {
       setBusy(false);
     }
@@ -43,7 +42,7 @@ export default function Login() {
       await verifyCode(email, code);
       // The root layout switches to the app once the session exists.
     } catch {
-      setError('Koodi on väärä tai vanhentunut. Tarkista koodi tai pyydä uusi.');
+      setError(t('codeWrong'));
     } finally {
       setBusy(false);
     }
@@ -55,9 +54,21 @@ export default function Login() {
     try {
       await signInWithPassword(email, password);
     } catch {
-      setError('Sähköposti tai salasana on väärä.');
+      setError(t('passwordWrong'));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function submitDemo(role: 'traveller' | 'guide') {
+    setDemoBusy(role);
+    setError(null);
+    try {
+      await signInDemo(password, role);
+    } catch {
+      setError(t('demoPasswordWrong'));
+    } finally {
+      setDemoBusy(null);
     }
   }
 
@@ -70,24 +81,46 @@ export default function Login() {
 
   return (
     <Screen>
+      <LanguageChips />
       <Card tone="brand" style={{ gap: space.m, paddingVertical: space.xl }}>
-        <H1 style={{ color: '#1A1A14' }}>Minun matkani</H1>
+        <H1 style={{ color: '#1A1A14' }}>{t('appName')}</H1>
         <View style={{ gap: space.s }}>
           {FEATURES.map((f) => (
             <Body key={f} style={{ color: '#1A1A14' }}>
-              ✓ {f}
+              ✓ {t(f)}
             </Body>
           ))}
         </View>
       </Card>
 
-      {step === 'email' ? (
+      {DEMO_MODE ? (
         <View style={styles.form}>
           <Field
-            label="Sähköposti"
+            label={t('demoPassword')}
+            value={password}
+            onChangeText={setPassword}
+            placeholder={t('pastePassword')}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="password"
+            textContentType="password"
+            returnKeyType="go"
+            onSubmitEditing={() => password && submitDemo('traveller')}
+            error={error}
+          />
+          <Muted>{t('demoHint')}</Muted>
+          <View style={styles.buttons}>
+            <Button label={t('asCustomer')} onPress={() => submitDemo('traveller')} disabled={!password || !!demoBusy} busy={demoBusy === 'traveller'} />
+            <Button label={t('asGuide')} variant="ghost" onPress={() => submitDemo('guide')} disabled={!password || !!demoBusy} busy={demoBusy === 'guide'} />
+          </View>
+        </View>
+      ) : step === 'email' ? (
+        <View style={styles.form}>
+          <Field
+            label={t('email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="sinä@esimerkki.fi"
+            placeholder={t('emailPlaceholder')}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -96,11 +129,11 @@ export default function Login() {
             onSubmitEditing={() => validEmail && submitEmail()}
             error={error}
           />
-          <Muted>Käytä samaa sähköpostiosoitetta, jonka annoit varausta tehdessäsi. Lähetämme siihen kirjautumiskoodin.</Muted>
-          <Button label="Lähetä koodi" onPress={submitEmail} disabled={!validEmail} busy={busy} style={{ alignSelf: 'flex-start' }} />
+          <Muted>{t('emailHint')}</Muted>
+          <Button label={t('sendCode')} onPress={submitEmail} disabled={!validEmail} busy={busy} style={{ alignSelf: 'flex-start' }} />
           {PASSWORD_LOGIN ? (
             <Button
-              label="Testitunnus: kirjaudu salasanalla"
+              label={t('testPasswordLogin')}
               variant="ghost"
               small
               onPress={() => {
@@ -114,7 +147,7 @@ export default function Login() {
       ) : step === 'password' ? (
         <View style={styles.form}>
           <Field
-            label="Sähköposti"
+            label={t('email')}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -123,7 +156,7 @@ export default function Login() {
             textContentType="emailAddress"
           />
           <Field
-            label="Salasana"
+            label={t('password')}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -133,20 +166,20 @@ export default function Login() {
             onSubmitEditing={() => validEmail && password && submitPassword()}
             error={error}
           />
-          <View style={{ flexDirection: 'row', gap: space.s, flexWrap: 'wrap' }}>
-            <Button label="Kirjaudu sisään" onPress={submitPassword} disabled={!validEmail || !password} busy={busy} />
-            <Button label="Takaisin" variant="ghost" onPress={backToEmail} />
+          <View style={styles.buttons}>
+            <Button label={t('signIn')} onPress={submitPassword} disabled={!validEmail || !password} busy={busy} />
+            <Button label={t('back')} variant="ghost" onPress={backToEmail} />
           </View>
         </View>
       ) : (
         <View style={styles.form}>
           <Body>
-            Lähetimme koodin osoitteeseen <Body style={{ fontWeight: '700' }}>{email.trim().toLowerCase()}</Body>.
+            {t('codeSentTo')} <Body style={{ fontWeight: '700' }}>{email.trim().toLowerCase()}</Body>.
           </Body>
           <Field
-            label="Kirjautumiskoodi"
+            label={t('code')}
             value={code}
-            onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
+            onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
             placeholder="123456"
             keyboardType="number-pad"
             autoComplete="one-time-code"
@@ -154,9 +187,9 @@ export default function Login() {
             maxLength={6}
             error={error}
           />
-          <View style={{ flexDirection: 'row', gap: space.s, flexWrap: 'wrap' }}>
-            <Button label="Kirjaudu sisään" onPress={submitCode} disabled={code.length !== 6} busy={busy} />
-            <Button label="Vaihda osoite" variant="ghost" onPress={backToEmail} />
+          <View style={styles.buttons}>
+            <Button label={t('signIn')} onPress={submitCode} disabled={code.length !== 6} busy={busy} />
+            <Button label={t('changeAddress')} variant="ghost" onPress={backToEmail} />
           </View>
         </View>
       )}
@@ -164,4 +197,7 @@ export default function Login() {
   );
 }
 
-const styles = StyleSheet.create({ form: { gap: space.m } });
+const styles = StyleSheet.create({
+  form: { gap: space.m },
+  buttons: { flexDirection: 'row', gap: space.s, flexWrap: 'wrap' },
+});

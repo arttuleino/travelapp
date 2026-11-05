@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useI18n } from '@/lib/i18n';
 import { currentIndex, hhmm } from '@/lib/time';
 import type { ProgrammeItem } from '@/lib/types';
 import { space, usePalette } from '@/theme';
@@ -15,16 +16,17 @@ type Props = {
 
 export function Timeline({ items, nowTime, past, onEdit }: Props) {
   const c = usePalette();
+  const { t } = useI18n();
   const now = nowTime ? currentIndex(items, nowTime) : -1;
 
   if (!items.length) {
-    return <Text style={{ color: c.muted, fontSize: 14 }}>Tälle päivälle ei ole ohjelmaa.</Text>;
+    return <Text style={{ color: c.muted, fontSize: 14 }}>{t('noProgramme')}</Text>;
   }
 
   return (
     <View>
       {/* Programme times are always the destination's wall-clock time. */}
-      <Text style={{ color: c.muted, fontSize: 12, marginBottom: 6 }}>Kellonajat paikallista aikaa (Local Time)</Text>
+      <Text style={{ color: c.muted, fontSize: 12, marginBottom: 6 }}>{t('localTimeNote')}</Text>
       {items.map((it, i) => {
         const isPast = past || (nowTime != null && i < now);
         const isNow = nowTime != null && i === now;
@@ -32,7 +34,7 @@ export function Timeline({ items, nowTime, past, onEdit }: Props) {
         const first = i === 0;
         const last = i === items.length - 1;
         return (
-          <View key={it.id} style={styles.row} accessibilityLabel={`${hhmm(it.starts_at)} ${it.title}${isNow ? ', käynnissä' : ''}`}>
+          <View key={it.id} style={styles.row} accessibilityLabel={`${hhmm(it.starts_at)} ${it.title}${isNow ? `, ${t('inProgress')}` : ''}`}>
             <Text style={[styles.time, { color: isNow ? c.fg : c.muted, fontWeight: isNow ? '800' : '500' }]}>{hhmm(it.starts_at)}</Text>
             <View style={styles.rail}>
               <View style={[styles.line, { backgroundColor: c.line, top: first ? 8 : 0, bottom: last ? undefined : 0, height: last ? 8 : undefined }]} />
@@ -50,15 +52,15 @@ export function Timeline({ items, nowTime, past, onEdit }: Props) {
               <View style={styles.tags}>
                 {it.previous_starts_at ? (
                   <Text style={[styles.tag, { backgroundColor: c.warnBg, color: c.warn }]}>
-                    Siirtynyt {hhmm(it.previous_starts_at)} → {hhmm(it.starts_at)}
+                    {t('moved', { from: hhmm(it.previous_starts_at), to: hhmm(it.starts_at) })}
                   </Text>
                 ) : null}
-                {isNext ? <Text style={[styles.tag, { backgroundColor: c.cream, color: c.fg }]}>Seuraavaksi</Text> : null}
+                {isNext ? <Text style={[styles.tag, { backgroundColor: c.cream, color: c.fg }]}>{t('next')}</Text> : null}
               </View>
             </View>
             {onEdit ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={`Muokkaa: ${it.title}`} onPress={() => onEdit(it)} style={styles.edit} hitSlop={8}>
-                <Text style={{ color: c.muted, fontWeight: '700', fontSize: 13 }}>Muokkaa</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('editA11y', { title: it.title })} onPress={() => onEdit(it)} style={styles.edit} hitSlop={8}>
+                <Text style={{ color: c.muted, fontWeight: '700', fontSize: 13 }}>{t('edit')}</Text>
               </Pressable>
             ) : null}
           </View>

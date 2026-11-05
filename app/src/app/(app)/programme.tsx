@@ -5,10 +5,12 @@ import { ScrollView, View } from 'react-native';
 import { Timeline } from '@/components/timeline';
 import { Button, Chip, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import { useMembership, useProgramme, useTripClock } from '@/lib/trip';
-import { formatDay, tripDays } from '@/lib/time';
+import { useI18n } from '@/lib/i18n';
+import { formatDay, tripDays, weekdayShort } from '@/lib/time';
 import { space } from '@/theme';
 
 export default function Programme() {
+  const { t, locale } = useI18n();
   const { trip, role } = useMembership();
   const clock = useTripClock(trip.timezone);
   const { items } = useProgramme(trip.id);
@@ -20,13 +22,13 @@ export default function Programme() {
   return (
     <Screen>
       <View style={{ gap: 4 }}>
-        <Eyebrow>{isGuide ? 'Muokkaa ohjelmaa' : 'Viikon ohjelma'}</Eyebrow>
-        <H1>{formatDay(day)}</H1>
+        <Eyebrow>{isGuide ? t('editProgramme') : t('weekProgramme')}</Eyebrow>
+        <H1>{formatDay(day, locale)}</H1>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.s }}>
         {days.map((d) => {
-          const [wd, date] = formatDay(d).split(' ');
-          return <Chip key={d} sub={d === clock.date ? `${wd} ·` : wd} label={date.split('.')[0]} selected={d === day} onPress={() => setDay(d)} />;
+          const wd = weekdayShort(d, locale);
+          return <Chip key={d} sub={d === clock.date ? `${wd} ·` : wd} label={String(Number(d.slice(8)))} selected={d === day} onPress={() => setDay(d)} />;
         })}
       </ScrollView>
       <Timeline
@@ -37,11 +39,11 @@ export default function Programme() {
       />
       {isGuide ? (
         <>
-          <Button label="Lisää ohjelmakohta" variant="ghost" onPress={() => router.push({ pathname: '/edit-item', params: { day } })} />
-          <Muted>Muutokset näkyvät heti kaikkien matkustajien sovelluksessa.</Muted>
+          <Button label={t('addItem')} variant="ghost" onPress={() => router.push({ pathname: '/edit-item', params: { day } })} />
+          <Muted>{t('guideProgrammeHint')}</Muted>
         </>
       ) : (
-        <Muted>Ohjelma päivittyy automaattisesti, kun opas tekee muutoksia.</Muted>
+        <Muted>{t('travellerProgrammeHint')}</Muted>
       )}
     </Screen>
   );

@@ -39,6 +39,14 @@ export async function signInWithPassword(email: string, password: string) {
   if (error) throw error;
 }
 
+/** Demo mode: one shared password opens the sample trip as a traveller (asiakas) or as the guide (opas). */
+export const DEMO_ACCOUNTS = { traveller: 'traveller@example.com', guide: 'guide@example.com' } as const;
+
+export async function signInDemo(password: string, role: keyof typeof DEMO_ACCOUNTS) {
+  const { error } = await supabase.auth.signInWithPassword({ email: DEMO_ACCOUNTS[role], password });
+  if (error) throw error;
+}
+
 export async function signOut() {
   await unregisterPush().catch(() => {});
   await supabase.auth.signOut();

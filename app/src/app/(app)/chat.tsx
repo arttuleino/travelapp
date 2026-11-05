@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 
 import { ChatView } from '@/components/chat-view';
 import { useAuth } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n';
 import { markAnnouncementsRead, markConversationRead, sendMessage, useAnnouncements, useConversation, useMembers } from '@/lib/chat';
 import { deviceTimeZone, deviceToday } from '@/lib/time';
 import { useMembership } from '@/lib/trip';
@@ -13,6 +14,7 @@ import { usePalette } from '@/theme';
 /** Traveller: private chat with the trip's guide(s), with group announcements in the same feed. */
 export default function Chat() {
   const c = usePalette();
+  const { t } = useI18n();
   const { trip, id: conversationId } = useMembership();
   const me = useAuth().session?.user.id ?? '';
   const { messages } = useConversation(conversationId);
@@ -34,9 +36,10 @@ export default function Chat() {
     <ChatView
       header={
         <View style={{ gap: 2 }}>
-          <Text style={{ color: c.fg, fontSize: 17, fontWeight: '800' }}>{guideNames ? `Opas ${guideNames}` : 'Opas'}</Text>
+          <Text style={{ color: c.fg, fontSize: 17, fontWeight: '800' }}>{guideNames ? t('guideNamed', { names: guideNames }) : t('guide')}</Text>
           <Text style={{ color: c.muted, fontSize: 13 }}>
-            {guides[0]?.phone ? `Puhelin ${guides[0].phone} · ` : ''}Hätätilanteessa soita 112
+            {guides[0]?.phone ? `${t('phone', { phone: guides[0].phone })} · ` : ''}
+            {t('emergency')}
           </Text>
         </View>
       }
@@ -45,9 +48,9 @@ export default function Chat() {
       timeZone={deviceTimeZone()}
       today={deviceToday()}
       onSend={(body) => sendMessage(conversationId, body)}
-      placeholder="Kirjoita viesti oppaalle"
-      empty="Täällä voit kysyä oppaalta mitä vain matkan aikana. Oppaan tiedotteet koko ryhmälle näkyvät myös täällä."
-      quickReplies={['Myöhästymme hieman', 'Voinko vaihtaa monot?']}
+      placeholder={t('chatPlaceholder')}
+      empty={t('chatEmpty')}
+      quickReplies={[t('quickLate'), t('quickBoots')]}
     />
   );
 }
