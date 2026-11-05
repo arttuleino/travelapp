@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,13 +23,20 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
   const body = <View style={styles.inner}>{children}</View>;
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      {scroll ? (
-        <ScrollView contentContainerStyle={{ paddingBottom: space.xl * 2 }} keyboardShouldPersistTaps="handled">
-          {body}
-        </ScrollView>
-      ) : (
-        body
-      )}
+      {/* Keeps the field being typed in above the keyboard; swipe down to close the keyboard. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: space.xl * 2 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            automaticallyAdjustKeyboardInsets>
+            {body}
+          </ScrollView>
+        ) : (
+          body
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
