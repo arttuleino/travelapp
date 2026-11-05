@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Timeline } from '@/components/timeline';
 import { Body, Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
-import { signOut } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n';
 import { useLatestAnnouncement, useMembership, useProgramme, useTripClock } from '@/lib/trip';
 import { deviceTimeZone, formatDay, formatRange, tripDays } from '@/lib/time';
 import { clockTime } from '@/lib/unread';
@@ -11,6 +11,7 @@ import { space, usePalette } from '@/theme';
 
 export default function Now() {
   const c = usePalette();
+  const { t, locale } = useI18n();
   const { trip, role, booking_ref, display_name } = useMembership();
   const clock = useTripClock(trip.timezone);
   const { items } = useProgramme(trip.id);
@@ -27,15 +28,15 @@ export default function Now() {
     <Screen>
       <Card tone="brand" style={{ gap: space.m }}>
         <View style={styles.row}>
-          <Eyebrow style={{ color: c.brandInk }}>{role === 'guide' ? 'Opas' : booking_ref ? `Varaus ${booking_ref}` : display_name}</Eyebrow>
-          {phase === 'during' ? <Text style={[styles.strong, { color: c.brandInk }]}>Päivä {dayIdx + 1}/{days.length}</Text> : null}
+          <Eyebrow style={{ color: c.brandInk }}>{role === 'guide' ? t('guide') : booking_ref ? t('booking', { ref: booking_ref }) : display_name}</Eyebrow>
+          {phase === 'during' ? <Text style={[styles.strong, { color: c.brandInk }]}>{t('dayOf', { n: dayIdx + 1, total: days.length })}</Text> : null}
         </View>
         <H1 style={{ color: c.brandInk }}>{trip.name}</H1>
         <Text style={[styles.meta, { color: c.brandInk }]}>
-          {formatRange(trip.starts_on, trip.ends_on)}
+          {formatRange(trip.starts_on, trip.ends_on, locale)}
           {trip.hotel_name ? `  ·  ${trip.hotel_name}` : ''}
         </Text>
-        <View style={styles.daybar} accessibilityLabel={phase === 'during' ? `Matkan päivä ${dayIdx + 1}/${days.length}` : undefined}>
+        <View style={styles.daybar} accessibilityLabel={phase === 'during' ? t('tripDayA11y', { n: dayIdx + 1, total: days.length }) : undefined}>
           {days.map((d, i) => (
             <View
               key={d}
@@ -52,7 +53,7 @@ export default function Now() {
           <Muted>
             {notice.author_name ? `${notice.author_name}, ` : ''}
             {clockTime(notice.send_at, deviceTimeZone())}
-            {notice.edited_at ? ' · muokattu' : ''}
+            {notice.edited_at ? ` · ${t('edited')}` : ''}
           </Muted>
         </View>
       ) : null}
@@ -60,25 +61,24 @@ export default function Now() {
       {phase === 'during' ? (
         <View style={{ gap: space.m }}>
           <View style={styles.row}>
-            <Text style={[styles.live, { color: c.live }]}>● NYT · {formatDay(clock.date).toUpperCase()} KLO {clock.time}</Text>
-            <Button label="Koko viikko" variant="ghost" small onPress={() => router.navigate('/programme')} />
+            <Text style={[styles.live, { color: c.live }]}>● {t('nowAt', { day: formatDay(clock.date, locale).toUpperCase(), time: clock.time })}</Text>
+            <Button label={t('wholeWeek')} variant="ghost" small onPress={() => router.navigate('/programme')} />
           </View>
           <Timeline items={shownItems} nowTime={clock.time} />
         </View>
       ) : phase === 'before' ? (
         <View style={{ gap: space.m }}>
-          <H2>{daysToGo === 1 ? 'Matka alkaa huomenna' : `Matkaan on ${daysToGo} päivää`}</H2>
-          <Eyebrow>Ensimmäinen päivä · {formatDay(trip.starts_on)}</Eyebrow>
+          <H2>{daysToGo === 1 ? t('startsTomorrow') : t('daysToGo', { n: daysToGo })}</H2>
+          <Eyebrow>{t('firstDay', { day: formatDay(trip.starts_on, locale) })}</Eyebrow>
           <Timeline items={shownItems} />
         </View>
       ) : (
         <Card tone="cream">
-          <H2>Kiitos matkasta!</H2>
-          <Body>Matka on päättynyt. Ohjelma on yhä nähtävissä Ohjelma-välilehdellä.</Body>
+          <H2>{t('thanks')}</H2>
+          <Body>{t('tripOver')}</Body>
         </Card>
       )}
 
-      <Button label="Kirjaudu ulos" variant="ghost" small onPress={signOut} style={{ alignSelf: 'flex-start' }} />
     </Screen>
   );
 }
