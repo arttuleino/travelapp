@@ -63,30 +63,48 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
   const [openedAt] = useState(() => new Date().toISOString());
   const sent = !!existing && existing.send_at <= openedAt;
   const scheduledExisting = !!existing && !sent;
-  const today = realNow(tz).date;
+
+  // The guide types the time in the phone's own time zone by default, or in the destination's.
+  const phoneTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const sameZone = phoneTz === tz;
+  const [zone, setZone] = useState<'phone' | 'trip'>('phone');
+  const inputTz = zone === 'phone' ? phoneTz : tz;
+  const today = realNow(inputTz).date;
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i));
 
   const [title, setTitle] = useState(existing?.title ?? 'Tiedote');
   const [body, setBody] = useState(existing?.body ?? '');
   const [later, setLater] = useState(scheduledExisting);
   const [day, setDay] = useState(() =>
-    scheduledExisting ? localDate(existing.send_at, tz) : defaultSlot(tz).day,
+    scheduledExisting ? localDate(existing.send_at, phoneTz) : defaultSlot(phoneTz).day,
   );
-  const [time, setTime] = useState(() => (scheduledExisting ? clockTime(existing.send_at, tz) : defaultSlot(tz).time));
+  const [time, setTime] = useState(() => (scheduledExisting ? clockTime(existing.send_at, phoneTz) : defaultSlot(phoneTz).time));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   const normTime = normalizeTime(time);
-  const sendAt = later && normTime ? zonedTimeToUtc(day, normTime, tz) : null;
-  // Times are destination time; say so plainly when the phone is in another time zone.
-  const phoneTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const destNow = realNow(tz).time;
-  const nowHint =
-    phoneTz === tz
-      ? `Kohteessa kello on nyt ${destNow}.`
-      : `Kohteessa kello on nyt ${destNow}, puhelimessasi ${tripClock(phoneTz, new Date()).time}.`;
-  const when = sendAt ? `${dayLabel(sendAt, today, tz).toLowerCase()} klo ${clockTime(sendAt, tz)}` : '';
+  const sendAt = later && normTime ? zonedTimeToUtc(day, normTime, inputTz) : null;
+
+  /** Switching zone keeps the same moment and rewrites the day and time in the other zone. */
+  function pickZone(next: 'phone' | 'trip') {
+    if (next === zone) return;
+    const nextTz = next === 'phone' ? phoneTz : tz;
+    if (sendAt) {
+      setDay(localDate(sendAt, nextTz));
+      setTime(clockTime(sendAt, nextTz));
+    }
+    setZone(next);
+  }
+
+  const zoneName = zone === 'phone' ? 'puhelimesi aikaa' : 'kohteen aikaa';
+  const nowHint = sameZone
+    ? `Kello on nyt ${realNow(tz).time}.`
+    : `Kello on nyt ${realNow(phoneTz).time} puhelimessasi ja ${realNow(tz).time} kohteessa (${trip.destination}).`;
+  const when = sendAt
+    ? `${dayLabel(sendAt, today, inputTz).toLowerCase()} klo ${clockTime(sendAt, inputTz)}${sameZone ? '' : ` ${zoneName}`}` +
+      (sameZone ? '' : zone === 'phone' ? ` (kohteessa ${clockTime(sendAt, tz)})` : ` (puhelimessasi ${clockTime(sendAt, phoneTz)})`)
+    : '';
 
   async function save() {
     if (!body.trim()) return setError('Kirjoita tiedotteen teksti.');
@@ -165,6 +183,12 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
           </View>
           {later ? (
             <View style={{ gap: space.s }}>
+              {!sameZone ? (
+                <View style={{ flexDirection: 'row', gap: space.s, flexWrap: 'wrap' }}>
+                  <Chip label="Puhelimen aika" selected={zone === 'phone'} onPress={() => pickZone('phone')} />
+                  <Chip label={`Kohteen aika (${trip.destination})`} selected={zone === 'trip'} onPress={() => pickZone('trip')} />
+                </View>
+              ) : null}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.s }}>
                 {days.map((d, i) => (
                   <Chip
@@ -176,7 +200,7 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
                 ))}
               </ScrollView>
               <Field
-                label="Kellonaika (kohteen aikaa)"
+                label={sameZone ? 'Kellonaika' : `Kellonaika (${zoneName})`}
                 value={time}
                 onChangeText={setTime}
                 placeholder="18:00"
@@ -185,7 +209,7 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
               />
               <Muted>
                 {nowHint}
-                {when ? ` Matkustajat näkevät tiedotteen ${when}${sendAt && phoneTz !== tz ? ` (puhelimesi aikaa klo ${clockTime(sendAt, phoneTz)})` : ''}.` : ''}
+                {when ? ` Matkustajat näkevät tiedotteen ${when}.` : ''}
               </Muted>
             </View>
           ) : null}
