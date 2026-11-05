@@ -12,14 +12,14 @@ test('unreadCount ignores own messages and anything before the marker', () => {
 });
 
 test('unreadAnnouncements', () => {
-  const a = [{ created_at: '2027-02-15T07:45:00Z', created_by: 'g' }];
+  const a = [{ send_at: '2027-02-15T07:45:00Z', created_by: 'g' }];
   assert.equal(unreadAnnouncements(a, undefined, 'me'), 1);
   assert.equal(unreadAnnouncements(a, '2027-02-15T08:00:00Z', 'me'), 0);
   assert.equal(unreadAnnouncements(a, undefined, 'g'), 0);
 });
 
 test('mergeFeed sorts oldest first across both sources', () => {
-  const feed = mergeFeed([{ created_at: '2027-02-15T09:00:00Z' }], [{ created_at: '2027-02-15T08:00:00Z' }, { created_at: '2027-02-15T10:00:00Z' }]);
+  const feed = mergeFeed([{ created_at: '2027-02-15T09:00:00Z' }], [{ send_at: '2027-02-15T08:00:00Z' }, { send_at: '2027-02-15T10:00:00Z' }]);
   assert.deepEqual(feed.map((f) => f.kind), ['announcement', 'message', 'announcement']);
 });
 
@@ -28,5 +28,6 @@ test('day labels and times use the trip time zone', () => {
   assert.equal(dayLabel('2027-02-14T23:30:00Z', '2027-02-15', 'Europe/Vienna'), 'Tänään');
   assert.equal(dayLabel('2027-02-14T08:00:00Z', '2027-02-15', 'Europe/Vienna'), 'Eilen');
   assert.equal(dayLabel('2027-02-13T08:00:00Z', '2027-02-15', 'Europe/Vienna'), 'la 13.2.');
+  assert.equal(dayLabel('2027-02-16T08:00:00Z', '2027-02-15', 'Europe/Vienna'), 'Huomenna');
   assert.equal(clockTime('2027-02-15T07:45:00Z', 'Europe/Vienna'), '08:45');
 });

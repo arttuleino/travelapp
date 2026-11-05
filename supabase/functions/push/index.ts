@@ -1,6 +1,7 @@
 // Sends Expo push notifications for new chat messages and group announcements.
-// Triggered by Supabase Database Webhooks (INSERT on public.messages and public.announcements),
-// which must send the header  x-webhook-secret: <PUSH_WEBHOOK_SECRET>.
+// Triggered by Supabase Database Webhooks (INSERT on public.messages and public.announcements)
+// and by a once-a-minute cron job for scheduled announcements (body {"due": true}).
+// Every caller must send the header  x-webhook-secret: <PUSH_WEBHOOK_SECRET>.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import { deadTokens, eventFromWebhook, toExpoBatches, type ExpoTicket, type Recipient } from './payload.ts';
@@ -18,13 +19,26 @@ Deno.serve(async (req) => {
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false },
   });
-  const { data, error } = await db.rpc('push_recipients', { p_kind: event.kind, p_id: event.id });
-  if (error) return new Response(`recipients failed: ${error.message}`, { status: 500 });
+  const recipients: Recipient[] = [];
+  if (event.kind === 'message') {
+    const { data, error } = await db.rpc('push_recipients', { p_kind: 'message', p_id: event.id });
+    if (error) return new Response(`recipients failed: ${error.message}`, { status: 500 });
+    recipients.push(...((data ?? []) as Recipient[]));
+  } else {
+    // Marks the due announcements as pushed first, so a parallel call cannot send them twice.
+    const { data: ids, error } = await db.rpc('claim_due_announcements');
+    if (error) return new Response(`claim failed: ${error.message}`, { status: 500 });
+    for (const id of (ids ?? []) as string[]) {
+      const { data, error: e } = await db.rpc('push_recipients', { p_kind: 'announcement', p_id: id });
+      if (e) return new Response(`recipients failed: ${e.message}`, { status: 500 });
+      recipients.push(...((data ?? []) as Recipient[]));
+    }
+  }
 
   let sent = 0;
   const dead: string[] = [];
   const accessToken = Deno.env.get('EXPO_ACCESS_TOKEN'); // optional, if push security is enabled in Expo
-  for (const batch of toExpoBatches((data ?? []) as Recipient[])) {
+  for (const batch of toExpoBatches(recipients)) {
     const res = await fetch(EXPO_PUSH_URL, {
       method: 'POST',
       headers: {

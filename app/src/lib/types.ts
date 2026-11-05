@@ -39,6 +39,10 @@ export type Announcement = {
   author_name: string | null;
   created_by: string | null;
   created_at: string;
+  /** When travellers see it; later than now = scheduled. */
+  send_at: string;
+  /** Set when the text was changed after it went out. */
+  edited_at: string | null;
 };
 
 export type Message = {

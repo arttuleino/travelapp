@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { currentIndex, formatDay, formatRange, normalizeTime, pickActiveTrip, tripClock, tripDays } from './time.ts';
+import { addDays, currentIndex, formatDay, formatRange, normalizeTime, pickActiveTrip, tripClock, tripDays, zonedTimeToUtc } from './time.ts';
 
 test('tripClock uses the destination time zone', () => {
   // 09:40 UTC = 10:40 in Vienna (CET, winter)
@@ -49,4 +49,15 @@ test('pickActiveTrip prefers ongoing, then upcoming, then latest', () => {
   assert.equal(pickActiveTrip([past, next], '2027-02-15'), next);
   assert.equal(pickActiveTrip([past], '2027-02-15'), past);
   assert.equal(pickActiveTrip([], '2027-02-15'), null);
+});
+
+test('zonedTimeToUtc converts destination wall-clock time to an instant', () => {
+  assert.equal(zonedTimeToUtc('2027-02-15', '08:45', 'Europe/Vienna'), '2027-02-15T07:45:00.000Z'); // winter, UTC+1
+  assert.equal(zonedTimeToUtc('2027-07-01', '08:45', 'Europe/Vienna'), '2027-07-01T06:45:00.000Z'); // summer, UTC+2
+  assert.equal(zonedTimeToUtc('2027-03-28', '12:00', 'Europe/Vienna'), '2027-03-28T10:00:00.000Z'); // DST change day
+  assert.equal(zonedTimeToUtc('2027-02-15', '00:30', 'Europe/Helsinki'), '2027-02-14T22:30:00.000Z');
+});
+
+test('addDays crosses months', () => {
+  assert.equal(addDays('2027-02-28', 1), '2027-03-01');
 });

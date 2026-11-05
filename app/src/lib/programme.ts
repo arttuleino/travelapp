@@ -35,10 +35,30 @@ export function changeNotice(before: ProgrammeItem | null, after: ItemInput | nu
   return { title: 'Ohjelma päivittyi', body: `${when}: ${after.title}${after.details ? `. ${after.details}` : ''}.` };
 }
 
-export async function postAnnouncement(tripId: string, title: string, body: string, authorName: string) {
+/** Sends now, or at `sendAt` (ISO) if given. */
+export async function postAnnouncement(tripId: string, title: string, body: string, authorName: string, sendAt?: string) {
   const { data } = await supabase.auth.getUser();
   const { error } = await supabase
     .from('announcements')
-    .insert({ trip_id: tripId, title, body, author_name: authorName, created_by: data.user?.id });
+    .insert({ trip_id: tripId, title, body, author_name: authorName, created_by: data.user?.id, ...(sendAt ? { send_at: sendAt } : {}) });
   if (error) throw error;
+}
+
+/**
+ * Edits an announcement. A sent one keeps its send time and is marked "muokattu"; a scheduled
+ * one can also be moved (`sendAt`), or sent right away by passing the current time.
+ */
+export async function updateAnnouncement(id: string, title: string, body: string, sendAt?: string) {
+  const { error } = await supabase
+    .from('announcements')
+    .update({ title, body, ...(sendAt ? { send_at: sendAt } : {}) })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Cancels a scheduled announcement (the database refuses to delete one that has gone out). */
+export async function cancelAnnouncement(id: string) {
+  const { error, count } = await supabase.from('announcements').delete({ count: 'exact' }).eq('id', id);
+  if (error) throw error;
+  if (!count) throw new Error('already sent');
 }

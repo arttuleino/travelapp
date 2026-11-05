@@ -85,6 +85,8 @@ export function useLiveTable<T>(
   column: string,
   value: string,
   query: (value: string) => PromiseLike<{ data: T[] | null }>,
+  /** Also reload every `pollMs`, for rows that become visible with time (scheduled announcements). */
+  pollMs?: number,
 ) {
   const [state, setState] = useState<{ key: string; rows: T[] } | null>(null);
   const [tick, setTick] = useState(0);
@@ -97,6 +99,7 @@ export function useLiveTable<T>(
         if (!cancelled) setState({ key, rows: data ?? [] });
       });
     load();
+    const timer = pollMs ? setInterval(load, pollMs) : undefined;
     const channel = supabase
       // Unique name: several screens may watch the same table at once.
       .channel(`${key}:${Math.random().toString(36).slice(2)}`)
@@ -104,9 +107,10 @@ export function useLiveTable<T>(
       .subscribe();
     return () => {
       cancelled = true;
+      if (timer) clearInterval(timer);
       supabase.removeChannel(channel);
     };
-  }, [key, table, column, value, query, tick]);
+  }, [key, table, column, value, query, tick, pollMs]);
 
   const fresh = state?.key === key;
   const reload = useCallback(() => setTick((t) => t + 1), []);
@@ -115,8 +119,15 @@ export function useLiveTable<T>(
 
 const programmeQuery = (tripId: string) =>
   supabase.from('programme_items').select('*').eq('trip_id', tripId).order('day').order('starts_at');
+// Guides can also read scheduled announcements, so only take ones that have gone out.
 const latestAnnouncementQuery = (tripId: string) =>
-  supabase.from('announcements').select('*').eq('trip_id', tripId).order('created_at', { ascending: false }).limit(1);
+  supabase
+    .from('announcements')
+    .select('*')
+    .eq('trip_id', tripId)
+    .lte('send_at', new Date().toISOString())
+    .order('send_at', { ascending: false })
+    .limit(1);
 
 export function useProgramme(tripId: string) {
   const { rows, loading } = useLiveTable<ProgrammeItem>('programme_items', 'trip_id', tripId, programmeQuery);
@@ -124,6 +135,6 @@ export function useProgramme(tripId: string) {
 }
 
 export function useLatestAnnouncement(tripId: string): Announcement | null {
-  const { rows } = useLiveTable<Announcement>('announcements', 'trip_id', tripId, latestAnnouncementQuery);
+  const { rows } = useLiveTable<Announcement>('announcements', 'trip_id', tripId, latestAnnouncementQuery, 60_000);
   return rows[0] ?? null;
 }
