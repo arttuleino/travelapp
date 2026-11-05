@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { ChatView } from '@/components/chat-view';
 import { useAuth } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n';
 import { markConversationRead, sendMessage, useConversation, useMembers } from '@/lib/chat';
 import { deviceTimeZone, deviceToday } from '@/lib/time';
 import { useMembership } from '@/lib/trip';
@@ -13,6 +14,7 @@ import { space, usePalette } from '@/theme';
 /** Guide: conversation with one booking. */
 export default function Conversation() {
   const c = usePalette();
+  const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { trip } = useMembership();
   const me = useAuth().session?.user.id ?? '';
@@ -28,13 +30,13 @@ export default function Conversation() {
     <ChatView
       header={
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Takaisin" onPress={() => router.back()} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('back')} onPress={() => router.back()} hitSlop={10}>
             <Text style={{ color: c.fg, fontSize: 22, fontWeight: '700' }}>‹</Text>
           </Pressable>
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={{ color: c.fg, fontSize: 17, fontWeight: '800' }}>{traveller?.display_name ?? 'Matkustaja'}</Text>
+            <Text style={{ color: c.fg, fontSize: 17, fontWeight: '800' }}>{traveller?.display_name ?? t('traveller')}</Text>
             <Text style={{ color: c.muted, fontSize: 13 }}>
-              {[traveller?.room && `Huone ${traveller.room}`, traveller && `${traveller.party_size} hlö`, traveller?.phone].filter(Boolean).join(' · ')}
+              {[traveller?.room && t('room', { room: traveller.room }), traveller && t('persons', { n: traveller.party_size }), traveller?.phone].filter(Boolean).join(' · ')}
             </Text>
           </View>
         </View>
@@ -44,8 +46,8 @@ export default function Conversation() {
       timeZone={deviceTimeZone()}
       today={deviceToday()}
       onSend={(body) => sendMessage(id, body)}
-      placeholder={`Vastaa: ${traveller?.display_name ?? ''}`}
-      empty="Ei vielä viestejä tämän varauksen kanssa."
+      placeholder={t('replyTo', { name: traveller?.display_name ?? '' })}
+      empty={t('conversationEmpty')}
     />
   );
 }
