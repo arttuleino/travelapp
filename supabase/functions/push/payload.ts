@@ -16,8 +16,9 @@ export function toExpoBatches(recipients: Recipient[], size = 100): ExpoMessage[
   const seen = new Set<string>();
   const msgs: ExpoMessage[] = [];
   for (const r of recipients) {
-    if (seen.has(r.token)) continue; // one notification per device
-    seen.add(r.token);
+    const key = `${r.token}\n${r.title}\n${r.body}`;
+    if (seen.has(key)) continue; // one notification per device and announcement/message
+    seen.add(key);
     msgs.push({ to: r.token, title: r.title, body: r.body, sound: 'default', data: { url: r.url }, channelId: 'default' });
   }
   const out: ExpoMessage[][] = [];
@@ -30,11 +31,18 @@ export function deadTokens(batch: ExpoMessage[], tickets: ExpoTicket[]): string[
   return tickets.flatMap((t, i) => (t.status === 'error' && t.details?.error === 'DeviceNotRegistered' && batch[i] ? [batch[i].to] : []));
 }
 
-/** Maps a database webhook payload to the kind of event push_recipients() understands. */
-export function eventFromWebhook(payload: unknown): { kind: 'message' | 'announcement'; id: string } | null {
-  const p = payload as { type?: string; table?: string; record?: { id?: string } } | null;
+export type PushEvent = { kind: 'message'; id: string } | { kind: 'due-announcements' };
+
+/**
+ * Maps a request body to what should be pushed. A new message pushes that message. A new
+ * announcement, or the once-a-minute cron call `{"due": true}`, pushes every announcement whose
+ * send time has come (scheduled ones included); the database makes sure each goes out once.
+ */
+export function eventFromWebhook(payload: unknown): PushEvent | null {
+  const p = payload as { type?: string; table?: string; record?: { id?: string }; due?: boolean } | null;
+  if (p?.due === true) return { kind: 'due-announcements' };
   if (!p || p.type !== 'INSERT' || !p.record?.id) return null;
   if (p.table === 'messages') return { kind: 'message', id: p.record.id };
-  if (p.table === 'announcements') return { kind: 'announcement', id: p.record.id };
+  if (p.table === 'announcements') return { kind: 'due-announcements' };
   return null;
 }

@@ -65,7 +65,8 @@ export function ChatView({ header, feed, me, timeZone, today, onSend, placeholde
                     <Text style={{ color: c.fg, fontSize: 15 }}>{a.body}</Text>
                     <Text style={[styles.time, { color: c.muted }]}>
                       {a.author_name ? `${a.author_name} · ` : ''}
-                      {clockTime(a.created_at, timeZone)}
+                      {clockTime(a.send_at, timeZone)}
+                      {a.edited_at ? ' · muokattu' : ''}
                     </Text>
                   </View>
                 </View>

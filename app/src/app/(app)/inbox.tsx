@@ -3,8 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { useGuideUnread, useMembers } from '@/lib/chat';
+import { useAnnouncements, useGuideUnread, useMembers } from '@/lib/chat';
 import { useMembership, useTripClock } from '@/lib/trip';
+import { tripClock } from '@/lib/time';
+import type { Announcement } from '@/lib/types';
 import { clockTime, dayLabel } from '@/lib/unread';
 import { radius, space, usePalette } from '@/theme';
 
@@ -22,6 +24,14 @@ export default function Inbox() {
     .sort((a, b) => b.unread - a.unread || (b.last?.created_at ?? '').localeCompare(a.last?.created_at ?? '') || a.t.display_name.localeCompare(b.t.display_name));
   const pax = travellers.reduce((s, t) => s + t.party_size, 0);
 
+  // Scheduled ones (soonest first) and the three latest sent ones, timed by the real clock.
+  const announcements = useAnnouncements(trip.id);
+  const nowIso = new Date().toISOString();
+  const realToday = tripClock(trip.timezone, new Date()).date;
+  const scheduled = announcements.filter((a) => a.send_at > nowIso);
+  const recent = announcements.filter((a) => a.send_at <= nowIso).slice(-3).reverse();
+  const at = (a: Announcement) => `${dayLabel(a.send_at, realToday, trip.timezone)} ${clockTime(a.send_at, trip.timezone)}`;
+
   return (
     <Screen>
       <View style={{ gap: 4 }}>
@@ -32,6 +42,36 @@ export default function Inbox() {
         </Muted>
       </View>
       <Button label="Lähetä tiedote koko ryhmälle" onPress={() => router.push('/announce')} />
+      {scheduled.length || recent.length ? (
+        <View style={{ gap: space.s }}>
+          <Eyebrow>Tiedotteet</Eyebrow>
+          {[...scheduled, ...recent].map((a) => {
+            const isScheduled = a.send_at > nowIso;
+            return (
+              <Pressable
+                key={a.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${a.title}, ${isScheduled ? 'ajastettu' : 'lähetetty'} ${at(a)}. Muokkaa`}
+                onPress={() => router.push({ pathname: '/announce', params: { id: a.id } })}
+                style={({ pressed }) => [styles.row, { backgroundColor: isScheduled ? c.cream : c.card, opacity: pressed ? 0.8 : 1 }]}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ color: c.fg, fontWeight: '700', fontSize: 15 }}>{a.title}</Text>
+                  <Text numberOfLines={1} style={{ color: c.muted, fontSize: 13 }}>
+                    {a.body}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                  <Text style={{ color: isScheduled ? c.fg : c.muted, fontSize: 12, fontWeight: isScheduled ? '700' : '400' }}>
+                    {isScheduled ? 'Ajastettu' : a.edited_at ? 'Muokattu' : 'Lähetetty'}
+                  </Text>
+                  <Text style={{ color: c.muted, fontSize: 12 }}>{at(a)}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+      <Eyebrow>Keskustelut</Eyebrow>
       <View style={{ gap: space.s }}>
         {rows.map(({ t, last, unread: n }) => {
           const when = last ? (dayLabel(last.created_at, clock.date, trip.timezone) === 'Tänään' ? clockTime(last.created_at, trip.timezone) : dayLabel(last.created_at, clock.date, trip.timezone)) : '';

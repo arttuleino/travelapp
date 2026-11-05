@@ -85,3 +85,22 @@ export function pickActiveTrip<T extends { starts_on: string; ends_on: string }>
   if (upcoming.length) return upcoming[0];
   return [...trips].sort((a, b) => b.ends_on.localeCompare(a.ends_on))[0];
 }
+
+/** Adds whole days to a 'YYYY-MM-DD' date. */
+export function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The instant (ISO, UTC) when the wall clock in `timeZone` shows `date` `time` ('YYYY-MM-DD', 'HH:MM'). */
+export function zonedTimeToUtc(date: string, time: string, timeZone: string): string {
+  const wanted = Date.parse(`${date}T${time}:00Z`);
+  let guess = wanted;
+  // Two rounds settle the offset, including on daylight saving days.
+  for (let i = 0; i < 2; i++) {
+    const shown = tripClock(timeZone, new Date(guess));
+    guess += wanted - Date.parse(`${shown.date}T${shown.time}:00Z`);
+  }
+  return new Date(guess).toISOString();
+}

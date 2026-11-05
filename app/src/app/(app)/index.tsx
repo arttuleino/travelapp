@@ -50,7 +50,8 @@ export default function Now() {
           <Body>{notice.body}</Body>
           <Muted>
             {notice.author_name ? `${notice.author_name}, ` : ''}
-            {new Date(notice.created_at).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit', timeZone: trip.timezone })}
+            {new Date(notice.send_at).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit', timeZone: trip.timezone })}
+            {notice.edited_at ? ' · muokattu' : ''}
           </Muted>
         </View>
       ) : null}

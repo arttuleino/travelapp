@@ -60,6 +60,22 @@ npx expo start               # avaa selaimessa painamalla w, puhelimessa Expo Go
 
 Kirjaudu esimerkkimatkalle osoitteella `traveller@example.com` (matkustaja) tai `guide@example.com` (opas). Kirjautumiskoodi tulee paikalliseen postilaatikkoon osoitteessa http://127.0.0.1:54324. Esimerkkimatka on helmikuussa 2027, joten `.env.example` asettaa sovelluksen kellon matkan kolmanteen päivään (`EXPO_PUBLIC_DEMO_NOW`). Poista rivi, kun käytät oikeita matkoja.
 
+## Ajastetut ja muokatut tiedotteet
+
+Opas voi ajastaa tiedotteen (Viestit → Lähetä tiedote → Ajasta) ja muokata tai perua sen Viestit-sivun Tiedotteet-listasta. Matkustajat näkevät ajastetun tiedotteen vasta lähetysaikana; tämän hoitaa tietokannan käyttöoikeus (`send_at`), joten se toimii ilman ajastettua taustatyötä. Lähetetyn tiedotteen muokkaus näkyy merkinnällä "muokattu", eikä siitä lähetetä uutta push-ilmoitusta.
+
+Push-ilmoitus ajastetusta tiedotteesta lähtee, kun push-funktiota kutsutaan minuutin välein. Kun push on otettu käyttöön, aja SQL Editorissa (laajennukset pg_cron ja pg_net päälle kohdasta Database → Extensions; korvaa PROJEKTI ja SALAISUUS):
+
+```sql
+select cron.schedule('push-due-announcements', '* * * * *', $$
+  select net.http_post(
+    url := 'https://PROJEKTI.supabase.co/functions/v1/push',
+    headers := '{"content-type": "application/json", "x-webhook-secret": "SALAISUUS"}'::jsonb,
+    body := '{"due": true}'::jsonb
+  )
+$$);
+```
+
 ## Testitunnukset ilman sähköpostia
 
 Kun `EXPO_PUBLIC_PASSWORD_LOGIN=1`, kirjautumissivulla näkyy "Testitunnus: kirjaudu salasanalla". Luo tunnukset Supabasessa: Authentication → Users → Add user → Create new user, käytä samaa sähköpostia kuin `trip_members`-taulussa ja valitse Auto Confirm User. Oikeassa käytössä asetus pidetään pois päältä, ja kirjautuminen tapahtuu sähköpostikoodilla.

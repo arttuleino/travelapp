@@ -7,7 +7,7 @@ import { unreadAnnouncements, unreadCount } from './unread';
 const conversationQuery = (conversationId: string) =>
   supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at');
 const tripMessagesQuery = (tripId: string) => supabase.from('messages').select('*').eq('trip_id', tripId).order('created_at');
-const announcementsQuery = (tripId: string) => supabase.from('announcements').select('*').eq('trip_id', tripId).order('created_at');
+const announcementsQuery = (tripId: string) => supabase.from('announcements').select('*').eq('trip_id', tripId).order('send_at');
 const readsQuery = (userId: string) => supabase.from('conversation_reads').select('conversation_id, last_read_at').eq('user_id', userId);
 const announcementReadsQuery = (userId: string) =>
   supabase.from('announcement_reads').select('trip_id, last_read_at').eq('user_id', userId);
@@ -21,9 +21,16 @@ export function useConversation(conversationId: string) {
   return { messages: rows, loading };
 }
 
+/**
+ * The trip's announcements, oldest first. Travellers get only those already sent (the database
+ * hides scheduled ones); guides get scheduled ones too. Polls each minute so scheduled ones appear on time.
+ */
 export function useAnnouncements(tripId: string) {
-  return useLiveTable<Announcement>('announcements', 'trip_id', tripId, announcementsQuery).rows;
+  return useLiveTable<Announcement>('announcements', 'trip_id', tripId, announcementsQuery, 60_000).rows;
 }
+
+/** Only announcements that have gone out (for guides, who can also see scheduled ones). */
+export const sentOnly = (items: Announcement[], now = new Date().toISOString()) => items.filter((a) => a.send_at <= now);
 
 export function useTripMessages(tripId: string) {
   return useLiveTable<Message>('messages', 'trip_id', tripId, tripMessagesQuery).rows;
