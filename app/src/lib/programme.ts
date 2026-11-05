@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { formatDay, hhmm } from './time';
+import { localeOf, translate, type Lang, type MessageKey, type Params } from './i18n';
 import type { ProgrammeItem } from './types';
 
 export type ItemInput = { trip_id: string; day: string; starts_at: string; title: string; details: string };
@@ -18,21 +19,21 @@ export async function deleteItem(id: string) {
   if (error) throw error;
 }
 
-/** Text of the notice sent to the group after a guide edit. */
-export function changeNotice(before: ProgrammeItem | null, after: ItemInput | null): { title: string; body: string } {
+/** Text of the notice sent to the group after a guide edit, in the guide's app language (Finnish by default). */
+export function changeNotice(before: ProgrammeItem | null, after: ItemInput | null, lang: Lang = 'fi'): { title: string; body: string } {
+  const t = (key: MessageKey, params?: Params) => translate(lang, key, params);
+  const locale = localeOf(lang);
+  const at = (day: string, time: string) => t('at', { day: formatDay(day, locale), time: hhmm(time) });
   if (!after && before) {
-    return { title: 'Ohjelmamuutos', body: `Peruttu: ${before.title} (${formatDay(before.day)} klo ${hhmm(before.starts_at)}).` };
+    return { title: t('noticeCancelledTitle'), body: t('noticeCancelledBody', { title: before.title, at: at(before.day, before.starts_at) }) };
   }
   if (!after) throw new Error('changeNotice needs an item');
-  const when = `${formatDay(after.day)} klo ${after.starts_at}`;
-  if (!before) return { title: 'Uusi ohjelmakohta', body: `${when}: ${after.title}.` };
+  const when = at(after.day, after.starts_at);
+  if (!before) return { title: t('noticeNewTitle'), body: `${when}: ${after.title}.` };
   if (before.day !== after.day || hhmm(before.starts_at) !== after.starts_at) {
-    return {
-      title: 'Aikataulumuutos',
-      body: `${after.title} on nyt ${when} (oli ${formatDay(before.day)} klo ${hhmm(before.starts_at)}).`,
-    };
+    return { title: t('noticeMovedTitle'), body: t('noticeMovedBody', { title: after.title, at: when, before: at(before.day, before.starts_at) }) };
   }
-  return { title: 'Ohjelma päivittyi', body: `${when}: ${after.title}${after.details ? `. ${after.details}` : ''}.` };
+  return { title: t('noticeUpdatedTitle'), body: `${when}: ${after.title}${after.details ? `. ${after.details}` : ''}.` };
 }
 
 /** Sends now, or at `sendAt` (ISO) if given. */

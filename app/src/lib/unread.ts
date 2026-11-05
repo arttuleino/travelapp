@@ -23,19 +23,24 @@ export function mergeFeed<M extends { created_at: string }, A extends { send_at:
   return feed.sort((x, y) => x.at.localeCompare(y.at));
 }
 
-/** Date label: 'Tänään', 'Eilen', 'Huomenna' or 'ma 15.2.' (dates are compared in the trip's time zone). */
-export function dayLabel(isoTime: string, today: string, timeZone: string): string {
+export type DayWords = { today: string; yesterday: string; tomorrow: string };
+const FI_WORDS: DayWords = { today: 'Tänään', yesterday: 'Eilen', tomorrow: 'Huomenna' };
+
+/** Date label: 'Tänään', 'Eilen', 'Huomenna' or 'ma 15.2.' (dates are compared in the trip's time zone). Pass `words` and `locale` for other languages. */
+export function dayLabel(isoTime: string, today: string, timeZone: string, words: DayWords = FI_WORDS, locale = 'fi-FI'): string {
   const d = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(isoTime));
-  if (d === today) return 'Tänään';
+  if (d === today) return words.today;
   const shift = (n: number) => {
     const x = new Date(`${today}T00:00:00Z`);
     x.setUTCDate(x.getUTCDate() + n);
     return x.toISOString().slice(0, 10);
   };
-  if (d === shift(-1)) return 'Eilen';
-  if (d === shift(1)) return 'Huomenna';
+  if (d === shift(-1)) return words.yesterday;
+  if (d === shift(1)) return words.tomorrow;
   const dt = new Date(`${d}T00:00:00Z`);
-  return `${['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'][dt.getUTCDay()]} ${dt.getUTCDate()}.${dt.getUTCMonth() + 1}.`;
+  // Same format as formatDay() in time.ts (kept local so the unit tests can import this file on its own).
+  if (locale.startsWith('fi')) return `${['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'][dt.getUTCDay()]} ${dt.getUTCDate()}.${dt.getUTCMonth() + 1}.`;
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(dt);
 }
 
 /** 'HH:MM' in the trip's time zone. */

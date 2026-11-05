@@ -48,16 +48,34 @@ export function tripDays(startsOn: string, endsOn: string): string[] {
   return out;
 }
 
-/** 'ma 15.2.' */
-export function formatDay(date: string): string {
+const isFinnish = (locale: string) => locale.startsWith('fi');
+
+/** Short weekday: 'ma' in Finnish, 'Mon', 'mån', 'Mo', 'lun' in other locales. */
+export function weekdayShort(date: string, locale = 'fi-FI'): string {
   const d = new Date(`${date}T00:00:00Z`);
-  return `${WEEKDAYS_FI[d.getUTCDay()]} ${d.getUTCDate()}.${d.getUTCMonth() + 1}.`;
+  if (isFinnish(locale)) return WEEKDAYS_FI[d.getUTCDay()];
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, '');
 }
 
-/** '13.–20.2.2027', '27.2.–6.3.2027' or '28.12.2026–4.1.2027' */
-export function formatRange(startsOn: string, endsOn: string): string {
+/** 'ma 15.2.' in Finnish; other locales use their own short form, e.g. 'Mon 15 Feb' or 'Mo., 15. Feb.'. */
+export function formatDay(date: string, locale = 'fi-FI'): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  if (isFinnish(locale)) return `${WEEKDAYS_FI[d.getUTCDay()]} ${d.getUTCDate()}.${d.getUTCMonth() + 1}.`;
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d);
+}
+
+/** '13.–20.2.2027', '27.2.–6.3.2027' or '28.12.2026–4.1.2027'; other locales use their own range form. */
+export function formatRange(startsOn: string, endsOn: string, locale = 'fi-FI'): string {
   const [y1, m1, d1] = startsOn.split('-').map(Number);
   const [y2, m2, d2] = endsOn.split('-').map(Number);
+  if (!isFinnish(locale)) {
+    try {
+      const f = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+      return f.formatRange(new Date(`${startsOn}T00:00:00Z`), new Date(`${endsOn}T00:00:00Z`));
+    } catch {
+      // Older engines without formatRange fall back to the numeric form below.
+    }
+  }
   if (y1 !== y2) return `${d1}.${m1}.${y1}–${d2}.${m2}.${y2}`;
   if (m1 !== m2) return `${d1}.${m1}.–${d2}.${m2}.${y2}`;
   return `${d1}.–${d2}.${m2}.${y2}`;
