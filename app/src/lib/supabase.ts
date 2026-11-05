@@ -29,3 +29,6 @@ if (Platform.OS !== 'web') {
 
 /** Pins the in-app clock for demos, e.g. EXPO_PUBLIC_DEMO_NOW=2027-02-15T10:40 */
 export const DEMO_NOW = process.env.EXPO_PUBLIC_DEMO_NOW || undefined;
+
+/** Shows a password sign-in for test accounts created in the Supabase dashboard (no email needed). */
+export const PASSWORD_LOGIN = process.env.EXPO_PUBLIC_PASSWORD_LOGIN === '1';
