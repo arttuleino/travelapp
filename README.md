@@ -21,6 +21,27 @@ Klikattava konseptiprototyyppi: https://claude.ai/artifact/8mRvs8VKKpotqsYxmcScm
 - Muutokset näkyvät matkustajille heti (Supabase Realtime).
 - Käyttöoikeudet tarkistetaan tietokannassa (row level security): matkustaja näkee vain oman matkansa ja oman varauksensa, vain opas voi muuttaa ohjelmaa.
 
+## Vaihe 2: chat, tiedotteet ja push-ilmoitukset
+
+- Jokaisella varauksella on oma yksityinen keskustelu matkan oppaiden kanssa (Opas-välilehti). Oppaan tiedotteet koko ryhmälle näkyvät samassa näkymässä.
+- Oppaan Viestit-välilehti listaa varaukset, lukemattomat ensin, ja sieltä lähetetään tiedote koko ryhmälle.
+- Lukemattomien määrä näkyy välilehden merkissä. Luetuksi merkitseminen käyttää palvelimen kelloa.
+- Lähettäjän nimi ja rooli tulevat tietokannasta lähettäjän omasta jäsenyydestä, joten kukaan ei voi kirjoittaa toisen nimissä. Viestejä ei voi muokata eikä poistaa.
+- Push-ilmoitus lähtee uudesta viestistä ja tiedotteesta (`supabase/functions/push`). Ilmoitusta napauttamalla aukeaa oikea keskustelu.
+
+### Push-ilmoitusten käyttöönotto
+
+Push-ilmoitukset toimivat vain oikeassa puhelimessa (ei selaimessa eikä simulaattorissa), ja ne vaativat kehitysversion tai EAS-käännöksen, koska Expo Go ei tue niitä.
+
+1. Luo EAS-projekti: `cd app && npx eas-cli@latest init`. Komento lisää `extra.eas.projectId`:n tiedostoon `app.json`.
+2. Ota funktio käyttöön ja aseta salaisuus:
+   ```bash
+   npx supabase functions deploy push
+   npx supabase secrets set PUSH_WEBHOOK_SECRET=<pitkä satunnainen merkkijono>
+   ```
+3. Luo Supabasen hallintapaneelissa kaksi **Database Webhookia** (Database → Webhooks): taulut `messages` ja `announcements`, tapahtuma *Insert*, tyyppi *Supabase Edge Functions*, funktio `push`, HTTP-otsake `x-webhook-secret: <sama salaisuus>`.
+4. Käännä sovellus puhelimeen: `npx eas-cli@latest build --profile development`.
+
 ## Käynnistys paikallisesti
 
 Tarvitset Node.js 22:n ja Dockerin (paikallista Supabasea varten).
@@ -55,14 +76,13 @@ Tuonti kertoo virheet rivinumeroineen. Uudelleentuonti päivittää matkan ja he
 
 ```bash
 cd app
-npm test            # aikalogiikka ja CSV-tuonti
+npm test            # aikalogiikka, lukemattomat viestit, CSV-tuonti ja push-funktion apufunktiot
 npm run typecheck
 npx expo lint
 ```
 
 ## Seuraavat vaiheet
 
-2. Chat oppaan kanssa, ryhmätiedotteet ja push-ilmoitukset
 3. Kartta, oppaan live-sijainti ja vastauspankki
 4. Matkakassa ja viikkoraportti
 5. Lisäpalveluiden varaus ja maksut matkanjärjestäjän järjestelmien kautta

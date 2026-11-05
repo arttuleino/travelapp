@@ -76,31 +76,41 @@ export function useTripClock(timeZone: string): Clock {
   return clock;
 }
 
-/** Subscribes to a table for one trip and reloads whenever a row changes (guide edits reach travellers live). */
-/** `query` must be a stable (module-level) function. */
-function useLiveTable<T>(table: string, tripId: string, query: (tripId: string) => PromiseLike<{ data: T[] | null }>) {
-  const [state, setState] = useState<{ tripId: string; rows: T[] } | null>(null);
+/**
+ * Loads rows where `column` = `value` and reloads whenever such a row changes, so edits by
+ * the guide reach travellers live. `query` must be a stable (module-level) function.
+ */
+export function useLiveTable<T>(
+  table: string,
+  column: string,
+  value: string,
+  query: (value: string) => PromiseLike<{ data: T[] | null }>,
+) {
+  const [state, setState] = useState<{ key: string; rows: T[] } | null>(null);
+  const [tick, setTick] = useState(0);
+  const key = `${table}:${column}:${value}`;
 
   useEffect(() => {
     let cancelled = false;
     const load = () =>
-      query(tripId).then(({ data }) => {
-        if (!cancelled) setState({ tripId, rows: data ?? [] });
+      query(value).then(({ data }) => {
+        if (!cancelled) setState({ key, rows: data ?? [] });
       });
     load();
     const channel = supabase
       // Unique name: several screens may watch the same table at once.
-      .channel(`${table}:${tripId}:${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table, filter: `trip_id=eq.${tripId}` }, () => load())
+      .channel(`${key}:${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table, filter: `${column}=eq.${value}` }, () => load())
       .subscribe();
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [table, tripId, query]);
+  }, [key, table, column, value, query, tick]);
 
-  const fresh = state?.tripId === tripId;
-  return { rows: fresh ? state.rows : [], loading: !fresh };
+  const fresh = state?.key === key;
+  const reload = useCallback(() => setTick((t) => t + 1), []);
+  return { rows: fresh ? state.rows : [], loading: !fresh, reload };
 }
 
 const programmeQuery = (tripId: string) =>
@@ -109,11 +119,11 @@ const latestAnnouncementQuery = (tripId: string) =>
   supabase.from('announcements').select('*').eq('trip_id', tripId).order('created_at', { ascending: false }).limit(1);
 
 export function useProgramme(tripId: string) {
-  const { rows, loading } = useLiveTable<ProgrammeItem>('programme_items', tripId, programmeQuery);
+  const { rows, loading } = useLiveTable<ProgrammeItem>('programme_items', 'trip_id', tripId, programmeQuery);
   return { items: rows, loading };
 }
 
 export function useLatestAnnouncement(tripId: string): Announcement | null {
-  const { rows } = useLiveTable<Announcement>('announcements', tripId, latestAnnouncementQuery);
+  const { rows } = useLiveTable<Announcement>('announcements', 'trip_id', tripId, latestAnnouncementQuery);
   return rows[0] ?? null;
 }
