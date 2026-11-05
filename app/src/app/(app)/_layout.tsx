@@ -8,6 +8,7 @@ import { signOut, useAuth } from '@/lib/auth';
 import { useGuideUnread, useTravellerUnread } from '@/lib/chat';
 import { useI18n } from '@/lib/i18n';
 import { listenForNotificationTaps, registerForPush } from '@/lib/push';
+import { DEMO_MODE } from '@/lib/supabase';
 import { useMembership, useTrip } from '@/lib/trip';
 
 export default function AppLayout() {
@@ -67,6 +68,8 @@ function TripTabs() {
       <Tabs.Screen name="programme" options={{ title: t('tabProgramme') }} />
       <Tabs.Screen name="chat" options={{ title: t('tabGuide'), href: guide ? null : undefined, tabBarBadge: badge(travellerUnread) }} />
       <Tabs.Screen name="inbox" options={{ title: t('tabMessages'), href: guide ? undefined : null, tabBarBadge: badge(guideUnread) }} />
+      {/* The trip cash book is for guides only (and needs Supabase, so not in demo mode). */}
+      <Tabs.Screen name="finance" options={{ title: t('tabFinance'), href: guide && !DEMO_MODE ? undefined : null }} />
       <Tabs.Screen name="profile" options={{ title: t('tabProfile') }} />
     </Tabs>
   );
