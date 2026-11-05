@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useI18n } from '@/lib/i18n';
 import type { Announcement, Message } from '@/lib/types';
 import { clockTime, dayLabel, type FeedItem } from '@/lib/unread';
 import { radius, space, usePalette } from '@/theme';
@@ -21,6 +22,7 @@ type Props = {
 
 export function ChatView({ header, feed, me, timeZone, today, onSend, placeholder, empty, quickReplies }: Props) {
   const c = usePalette();
+  const { t, locale } = useI18n();
   const scroll = useRef<ScrollViewInstance>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -35,13 +37,14 @@ export function ChatView({ header, feed, me, timeZone, today, onSend, placeholde
       await onSend(body);
       setDraft('');
     } catch {
-      setError('Viesti ei lähtenyt. Tarkista verkkoyhteys ja yritä uudelleen.');
+      setError(t('sendFailed'));
     } finally {
       setSending(false);
     }
   }
 
-  const labels = feed.map((f) => dayLabel(f.at, today, timeZone));
+  const words = { today: t('today'), yesterday: t('yesterday'), tomorrow: t('tomorrow') };
+  const labels = feed.map((f) => dayLabel(f.at, today, timeZone, words, locale));
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -61,12 +64,12 @@ export function ChatView({ header, feed, me, timeZone, today, onSend, placeholde
                 <View key={`a${a.id}`} style={{ gap: space.s }}>
                   {sep}
                   <View style={[styles.bubble, styles.left, { backgroundColor: c.cream }]}>
-                    <Text style={[styles.who, { color: c.fg }]}>{a.title} · koko ryhmälle</Text>
+                    <Text style={[styles.who, { color: c.fg }]}>{a.title} · {t('toWholeGroup')}</Text>
                     <Text style={{ color: c.fg, fontSize: 15 }}>{a.body}</Text>
                     <Text style={[styles.time, { color: c.muted }]}>
                       {a.author_name ? `${a.author_name} · ` : ''}
                       {clockTime(a.send_at, timeZone)}
-                      {a.edited_at ? ' · muokattu' : ''}
+                      {a.edited_at ? ` · ${t('edited')}` : ''}
                     </Text>
                   </View>
                 </View>
@@ -105,16 +108,16 @@ export function ChatView({ header, feed, me, timeZone, today, onSend, placeholde
               placeholderTextColor={c.muted}
               multiline
               maxLength={2000}
-              accessibilityLabel="Viesti"
+              accessibilityLabel={t('message')}
               style={[styles.input, { borderColor: c.line, color: c.fg }]}
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Lähetä"
+              accessibilityLabel={t('send')}
               disabled={!draft.trim() || sending}
               onPress={() => send()}
               style={[styles.send, { backgroundColor: draft.trim() && !sending ? c.brand : c.pillOff }]}>
-              <Text style={{ color: draft.trim() && !sending ? c.brandInk : c.muted, fontWeight: '800' }}>Lähetä</Text>
+              <Text style={{ color: draft.trim() && !sending ? c.brandInk : c.muted, fontWeight: '800' }}>{t('send')}</Text>
             </Pressable>
           </View>
         </View>

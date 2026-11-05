@@ -1,11 +1,13 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useI18n } from '@/lib/i18n';
 import { usePalette } from '@/theme';
 
 /** Brand tab bar: label with a yellow pill behind the selected tab. */
 export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabBarProps) {
   const c = usePalette();
+  const { t } = useI18n();
   return (
     <View style={[styles.bar, { backgroundColor: c.bg, borderTopColor: c.line, paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, i) => {
@@ -26,7 +28,7 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
               <Text style={[styles.label, { color: focused ? c.brandInk : c.muted }]}>{title}</Text>
             </View>
             {badge != null ? (
-              <View style={[styles.badge, { backgroundColor: c.live }]} accessibilityLabel={`${badge} lukematonta`}>
+              <View style={[styles.badge, { backgroundColor: c.live }]} accessibilityLabel={t('unread', { n: String(badge) })}>
                 <Text style={styles.badgeText}>{badge}</Text>
               </View>
             ) : null}
