@@ -37,5 +37,29 @@ export type Announcement = {
   title: string;
   body: string;
   author_name: string | null;
+  created_by: string | null;
   created_at: string;
+};
+
+export type Message = {
+  id: string;
+  trip_id: string;
+  conversation_id: string; // the traveller's trip_members.id
+  sender_id: string | null;
+  sender_role: Role;
+  sender_name: string;
+  body: string;
+  created_at: string;
+};
+
+export type Member = {
+  id: string;
+  trip_id: string;
+  email: string;
+  role: Role;
+  display_name: string;
+  booking_ref: string | null;
+  party_size: number;
+  room: string | null;
+  phone: string | null;
 };

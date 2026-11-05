@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { unregisterPush } from './push';
 import { supabase } from './supabase';
 
 type AuthState = { session: Session | null; ready: boolean };
@@ -32,4 +33,7 @@ export async function verifyCode(email: string, code: string) {
   if (error) throw error;
 }
 
-export const signOut = () => supabase.auth.signOut();
+export async function signOut() {
+  await unregisterPush().catch(() => {});
+  await supabase.auth.signOut();
+}
