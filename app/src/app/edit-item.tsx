@@ -3,35 +3,39 @@ import { useState } from 'react';
 import { ScrollView, Switch, Text, View } from 'react-native';
 
 import { Body, Button, Chip, Field, H2, Muted, Screen } from '@/components/ui';
+import { useI18n } from '@/lib/i18n';
 import { changeNotice, deleteItem, postAnnouncement, saveItem, type ItemInput } from '@/lib/programme';
 import { useMembership, useProgramme, useTripClock } from '@/lib/trip';
-import { formatDay, hhmm, normalizeTime, tripDays } from '@/lib/time';
+import { hhmm, normalizeTime, tripDays, weekdayShort } from '@/lib/time';
 import type { ProgrammeItem } from '@/lib/types';
 import { space, usePalette } from '@/theme';
 
 export default function EditItem() {
   const { id, day: dayParam } = useLocalSearchParams<{ id?: string; day?: string }>();
+  const { t } = useI18n();
   const { trip, role } = useMembership();
   const { items, loading } = useProgramme(trip.id);
   const existing = id ? (items.find((i) => i.id === id) ?? null) : null;
 
-  if (role !== 'guide') return <Message text="Vain opas voi muokata ohjelmaa." />;
+  if (role !== 'guide') return <Message text={t('onlyGuideEdits')} />;
   if (id && loading) return null;
-  if (id && !existing) return <Message text="Ohjelmakohtaa ei löytynyt. Se on ehkä poistettu." />;
+  if (id && !existing) return <Message text={t('itemNotFound')} />;
   return <EditForm key={existing?.id ?? 'new'} existing={existing} initialDay={dayParam} />;
 }
 
 function Message({ text }: { text: string }) {
+  const { t } = useI18n();
   return (
     <Screen>
       <Body>{text}</Body>
-      <Button label="Takaisin" variant="ghost" onPress={() => router.back()} />
+      <Button label={t('back')} variant="ghost" onPress={() => router.back()} />
     </Screen>
   );
 }
 
 function EditForm({ existing, initialDay }: { existing: ProgrammeItem | null; initialDay?: string }) {
   const c = usePalette();
+  const { t, lang, locale } = useI18n();
   const { trip, display_name } = useMembership();
   const clock = useTripClock(trip.timezone);
   const days = tripDays(trip.starts_on, trip.ends_on);
@@ -55,20 +59,20 @@ function EditForm({ existing, initialDay }: { existing: ProgrammeItem | null; in
   const normTime = normalizeTime(time);
 
   async function save() {
-    if (!normTime) return setError('Anna kellonaika muodossa 09:15.');
-    if (!title.trim()) return setError('Anna ohjelmakohdalle otsikko.');
+    if (!normTime) return setError(t('timeFormat0915'));
+    if (!title.trim()) return setError(t('needTitle'));
     setBusy(true);
     setError(null);
     const input: ItemInput = { trip_id: trip.id, day, starts_at: normTime, title: title.trim(), details: details.trim() };
     try {
       await saveItem(input, existing?.id);
       if (notify) {
-        const n = changeNotice(existing, input);
+        const n = changeNotice(existing, input, lang);
         await postAnnouncement(trip.id, n.title, n.body, display_name);
       }
       router.back();
     } catch {
-      setError('Tallennus ei onnistunut. Tarkista verkkoyhteys ja yritä uudelleen.');
+      setError(t('saveFailed'));
       setBusy(false);
     }
   }
@@ -79,54 +83,53 @@ function EditForm({ existing, initialDay }: { existing: ProgrammeItem | null; in
     try {
       await deleteItem(existing.id);
       if (notify) {
-        const n = changeNotice(existing, null);
+        const n = changeNotice(existing, null, lang);
         await postAnnouncement(trip.id, n.title, n.body, display_name);
       }
       router.back();
     } catch {
-      setError('Poisto ei onnistunut. Yritä uudelleen.');
+      setError(t('deleteFailed'));
       setBusy(false);
     }
   }
 
   return (
     <Screen>
-      <H2>{existing ? 'Muokkaa ohjelmakohtaa' : 'Uusi ohjelmakohta'}</H2>
+      <H2>{existing ? t('editItem') : t('newItem')}</H2>
       <View style={{ gap: 6 }}>
-        <Text style={{ color: c.fg, fontWeight: '600', fontSize: 14 }}>Päivä</Text>
+        <Text style={{ color: c.fg, fontWeight: '600', fontSize: 14 }}>{t('day')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.s }}>
           {days.map((d) => {
-            const [wd, date] = formatDay(d).split(' ');
-            return <Chip key={d} sub={wd} label={date.split('.')[0]} selected={d === day} onPress={() => pickDay(d)} />;
+            return <Chip key={d} sub={weekdayShort(d, locale)} label={String(Number(d.slice(8)))} selected={d === day} onPress={() => pickDay(d)} />;
           })}
         </ScrollView>
       </View>
-      <Field label="Kellonaika" value={time} onChangeText={setTime} placeholder="09:15" keyboardType="numbers-and-punctuation" maxLength={5} />
-      <Field label="Otsikko" value={title} onChangeText={setTitle} placeholder="esim. Opastettu lasku" maxLength={200} />
-      <Field label="Lisätiedot" value={details} onChangeText={setDetails} placeholder="esim. kokoontumispaikka" multiline />
+      <Field label={t('time')} value={time} onChangeText={setTime} placeholder="09:15" keyboardType="numbers-and-punctuation" maxLength={5} />
+      <Field label={t('title')} value={title} onChangeText={setTitle} placeholder={t('itemTitlePlaceholder')} maxLength={200} />
+      <Field label={t('details')} value={details} onChangeText={setDetails} placeholder={t('detailsPlaceholder')} multiline />
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.m }}>
         <View style={{ flex: 1 }}>
-          <Body style={{ fontWeight: '700' }}>Ilmoita ryhmälle</Body>
-          <Muted>Muutos näkyy matkustajien etusivulla ilmoituksena.</Muted>
+          <Body style={{ fontWeight: '700' }}>{t('notifyGroup')}</Body>
+          <Muted>{t('notifyHint')}</Muted>
         </View>
-        <Switch value={notify} onValueChange={setNotify} trackColor={{ true: c.ok, false: c.pillOff }} accessibilityLabel="Ilmoita muutoksesta ryhmälle" />
+        <Switch value={notify} onValueChange={setNotify} trackColor={{ true: c.ok, false: c.pillOff }} accessibilityLabel={t('notifyA11y')} />
       </View>
       {error ? <Text style={{ color: c.live }}>{error}</Text> : null}
-      <Button label="Tallenna" onPress={save} busy={busy} />
+      <Button label={t('save')} onPress={save} busy={busy} />
       {existing ? (
         confirmDelete ? (
           <View style={{ gap: space.s }}>
-            <Body>Poistetaanko “{existing.title}” ohjelmasta?</Body>
+            <Body>{t('deleteConfirm', { title: existing.title })}</Body>
             <View style={{ flexDirection: 'row', gap: space.s }}>
-              <Button label="Poista" variant="danger" onPress={remove} busy={busy} />
-              <Button label="Peruuta" variant="ghost" onPress={() => setConfirmDelete(false)} />
+              <Button label={t('delete')} variant="danger" onPress={remove} busy={busy} />
+              <Button label={t('cancel')} variant="ghost" onPress={() => setConfirmDelete(false)} />
             </View>
           </View>
         ) : (
-          <Button label="Poista ohjelmakohta" variant="ghost" onPress={() => setConfirmDelete(true)} />
+          <Button label={t('deleteItem')} variant="ghost" onPress={() => setConfirmDelete(true)} />
         )
       ) : null}
-      <Button label="Peruuta" variant="ghost" onPress={() => router.back()} />
+      <Button label={t('cancel')} variant="ghost" onPress={() => router.back()} />
     </Screen>
   );
 }
