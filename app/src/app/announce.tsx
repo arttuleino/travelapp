@@ -109,7 +109,7 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
   async function save() {
     if (!body.trim()) return setError('Kirjoita tiedotteen teksti.');
     if (later && !normTime) return setError('Anna kellonaika muodossa 18:00.');
-    if (sendAt && !isInFuture(sendAt)) return setError('Valitse aika, joka on tulevaisuudessa.');
+    if (sendAt && !isInFuture(sendAt)) return setError('Tämä aika on jo mennyt. Valitse myöhäisempi aika tai lähetä heti.');
     setBusy(true);
     setError(null);
     const t = title.trim() || 'Tiedote';
@@ -236,9 +236,9 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
   );
 }
 
-/** At least a minute from now, so the notice is not "scheduled" into the past. */
+/** Later than now, so the notice is not "scheduled" into the past (the next minute is fine). */
 function isInFuture(iso: string) {
-  return new Date(iso).getTime() > new Date().getTime() + 60_000;
+  return new Date(iso).getTime() > new Date().getTime();
 }
 
 /** The trip-local date of an instant. */
