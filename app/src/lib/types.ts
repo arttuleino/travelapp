@@ -1,0 +1,41 @@
+export type Role = 'traveller' | 'guide';
+
+export type Trip = {
+  id: string;
+  name: string;
+  destination: string;
+  country: string | null;
+  starts_on: string;
+  ends_on: string;
+  timezone: string;
+  hotel_name: string | null;
+};
+
+export type Membership = {
+  id: string;
+  role: Role;
+  display_name: string;
+  booking_ref: string | null;
+  party_size: number;
+  room: string | null;
+  trip: Trip;
+};
+
+export type ProgrammeItem = {
+  id: string;
+  trip_id: string;
+  day: string;
+  starts_at: string; // 'HH:MM:SS'
+  title: string;
+  details: string;
+  previous_starts_at: string | null;
+};
+
+export type Announcement = {
+  id: string;
+  trip_id: string;
+  title: string;
+  body: string;
+  author_name: string | null;
+  created_at: string;
+};
