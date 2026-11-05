@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useAnnouncements, useGuideUnread, useMembers } from '@/lib/chat';
-import { useMembership, useTripClock } from '@/lib/trip';
-import { tripClock } from '@/lib/time';
+import { useMembership } from '@/lib/trip';
+import { deviceTimeZone, deviceToday } from '@/lib/time';
 import type { Announcement } from '@/lib/types';
 import { clockTime, dayLabel } from '@/lib/unread';
 import { radius, space, usePalette } from '@/theme';
@@ -15,7 +15,6 @@ export default function Inbox() {
   const c = usePalette();
   const { trip } = useMembership();
   const me = useAuth().session?.user.id ?? '';
-  const clock = useTripClock(trip.timezone);
   const travellers = useMembers(trip.id).filter((m) => m.role === 'traveller');
   const { byConversation, unread } = useGuideUnread(trip.id, me);
 
@@ -27,10 +26,11 @@ export default function Inbox() {
   // Scheduled ones (soonest first) and the three latest sent ones, timed by the real clock.
   const announcements = useAnnouncements(trip.id);
   const nowIso = new Date().toISOString();
-  const realToday = tripClock(trip.timezone, new Date()).date;
+  const tz = deviceTimeZone();
+  const realToday = deviceToday();
   const scheduled = announcements.filter((a) => a.send_at > nowIso);
   const recent = announcements.filter((a) => a.send_at <= nowIso).slice(-3).reverse();
-  const at = (a: Announcement) => `${dayLabel(a.send_at, realToday, trip.timezone)} ${clockTime(a.send_at, trip.timezone)}`;
+  const at = (a: Announcement) => `${dayLabel(a.send_at, realToday, tz)} ${clockTime(a.send_at, tz)}`;
 
   return (
     <Screen>
@@ -74,7 +74,7 @@ export default function Inbox() {
       <Eyebrow>Keskustelut</Eyebrow>
       <View style={{ gap: space.s }}>
         {rows.map(({ t, last, unread: n }) => {
-          const when = last ? (dayLabel(last.created_at, clock.date, trip.timezone) === 'Tänään' ? clockTime(last.created_at, trip.timezone) : dayLabel(last.created_at, clock.date, trip.timezone)) : '';
+          const when = last ? (dayLabel(last.created_at, realToday, tz) === 'Tänään' ? clockTime(last.created_at, tz) : dayLabel(last.created_at, realToday, tz)) : '';
           return (
             <Pressable
               key={t.id}

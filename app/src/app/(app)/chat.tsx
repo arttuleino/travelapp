@@ -5,7 +5,8 @@ import { Text, View } from 'react-native';
 import { ChatView } from '@/components/chat-view';
 import { useAuth } from '@/lib/auth';
 import { markAnnouncementsRead, markConversationRead, sendMessage, useAnnouncements, useConversation, useMembers } from '@/lib/chat';
-import { useMembership, useTripClock } from '@/lib/trip';
+import { deviceTimeZone, deviceToday } from '@/lib/time';
+import { useMembership } from '@/lib/trip';
 import { mergeFeed } from '@/lib/unread';
 import { usePalette } from '@/theme';
 
@@ -14,7 +15,6 @@ export default function Chat() {
   const c = usePalette();
   const { trip, id: conversationId } = useMembership();
   const me = useAuth().session?.user.id ?? '';
-  const clock = useTripClock(trip.timezone);
   const { messages } = useConversation(conversationId);
   const announcements = useAnnouncements(trip.id);
   const guides = useMembers(trip.id).filter((m) => m.role === 'guide');
@@ -42,8 +42,8 @@ export default function Chat() {
       }
       feed={feed}
       me={me}
-      timeZone={trip.timezone}
-      today={clock.date}
+      timeZone={deviceTimeZone()}
+      today={deviceToday()}
       onSend={(body) => sendMessage(conversationId, body)}
       placeholder="Kirjoita viesti oppaalle"
       empty="Täällä voit kysyä oppaalta mitä vain matkan aikana. Oppaan tiedotteet koko ryhmälle näkyvät myös täällä."
