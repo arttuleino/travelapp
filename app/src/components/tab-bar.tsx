@@ -8,6 +8,9 @@ import { usePalette } from '@/theme';
 export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabBarProps) {
   const c = usePalette();
   const { t } = useI18n();
+  // Guides have five tabs: tighten the pills so the labels fit on a narrow phone.
+  const visible = state.routes.filter((r) => !(descriptors[r.key]?.options as { hidden?: boolean } | undefined)?.hidden).length;
+  const compact = visible > 4;
   return (
     <View style={[styles.bar, { backgroundColor: c.bg, borderTopColor: c.line, paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, i) => {
@@ -24,8 +27,10 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
             accessibilityState={{ selected: focused }}
             onPress={() => navigateToTab(route.key)}
             style={styles.tab}>
-            <View style={[styles.pill, { backgroundColor: focused ? c.brand : 'transparent' }]}>
-              <Text style={[styles.label, { color: focused ? c.brandInk : c.muted }]}>{title}</Text>
+            <View style={[styles.pill, compact && styles.pillCompact, { backgroundColor: focused ? c.brand : 'transparent' }]}>
+              <Text numberOfLines={1} style={[styles.label, compact && styles.labelCompact, { color: focused ? c.brandInk : c.muted }]}>
+                {title}
+              </Text>
             </View>
             {badge != null ? (
               <View style={[styles.badge, { backgroundColor: c.live }]} accessibilityLabel={t('unread', { n: String(badge) })}>
@@ -43,7 +48,9 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },
   tab: { flex: 1, alignItems: 'center' },
   pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 99 },
+  pillCompact: { paddingHorizontal: 9 },
   label: { fontSize: 13, fontWeight: '700' },
+  labelCompact: { fontSize: 12 },
   badge: { position: 'absolute', top: -4, left: '58%', minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
 });

@@ -132,7 +132,8 @@ export function Field({ label, error, ...props }: TextInputProps & { label: stri
   );
 }
 
-export function Chip({ label, sub, selected, onPress }: { label: string; sub?: string; selected: boolean; onPress: () => void }) {
+/** `small` is for word choices (filters, account pickers) rather than big day numbers. */
+export function Chip({ label, sub, selected, onPress, small }: { label: string; sub?: string; selected: boolean; onPress: () => void; small?: boolean }) {
   const c = usePalette();
   return (
     <Pressable
@@ -141,7 +142,7 @@ export function Chip({ label, sub, selected, onPress }: { label: string; sub?: s
       onPress={onPress}
       style={[styles.chip, { backgroundColor: selected ? c.brand : c.card }]}>
       {sub ? <Text style={[styles.chipSub, { color: selected ? c.brandInk : c.muted }]}>{sub}</Text> : null}
-      <Text style={[styles.chipLabel, { color: selected ? c.brandInk : c.fg }]}>{label}</Text>
+      <Text style={[styles.chipLabel, small && styles.chipLabelSmall, { color: selected ? c.brandInk : c.fg }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -167,5 +168,6 @@ const styles = StyleSheet.create({
   chip: { borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, minWidth: 58, alignItems: 'center' },
   chipSub: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
   chipLabel: { fontSize: 18, fontWeight: '800' },
+  chipLabelSmall: { fontSize: 14, fontWeight: '700' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, gap: space.m },
 });

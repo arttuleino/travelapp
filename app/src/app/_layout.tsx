@@ -38,6 +38,8 @@ function RootStack() {
         <Stack.Screen name="(app)" />
         <Stack.Screen name="edit-item" options={{ presentation: 'modal' }} />
         <Stack.Screen name="announce" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="finance-entry" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="finance-settings" options={{ presentation: 'modal' }} />
         <Stack.Screen name="conversation/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
