@@ -79,6 +79,13 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
 
   const normTime = normalizeTime(time);
   const sendAt = later && normTime ? zonedTimeToUtc(day, normTime, tz) : null;
+  // Times are destination time; say so plainly when the phone is in another time zone.
+  const phoneTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const destNow = realNow(tz).time;
+  const nowHint =
+    phoneTz === tz
+      ? `Kohteessa kello on nyt ${destNow}.`
+      : `Kohteessa kello on nyt ${destNow}, puhelimessasi ${tripClock(phoneTz, new Date()).time}.`;
   const when = sendAt ? `${dayLabel(sendAt, today, tz).toLowerCase()} klo ${clockTime(sendAt, tz)}` : '';
 
   async function save() {
@@ -176,7 +183,10 @@ function AnnounceForm({ existing }: { existing: Announcement | null }) {
                 keyboardType="numbers-and-punctuation"
                 maxLength={5}
               />
-              {when ? <Muted>Matkustajat näkevät tiedotteen {when}.</Muted> : null}
+              <Muted>
+                {nowHint}
+                {when ? ` Matkustajat näkevät tiedotteen ${when}${sendAt && phoneTz !== tz ? ` (puhelimesi aikaa klo ${clockTime(sendAt, phoneTz)})` : ''}.` : ''}
+              </Muted>
             </View>
           ) : null}
         </View>
