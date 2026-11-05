@@ -104,6 +104,8 @@ export function useLiveTable<T>(
       // Unique name: several screens may watch the same table at once.
       .channel(`${key}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table, filter: `${column}=eq.${value}` }, () => load())
+      // Deletes carry only the primary key, so a column filter never matches them: reload on any delete.
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => load())
       .subscribe();
     return () => {
       cancelled = true;
