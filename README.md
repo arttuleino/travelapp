@@ -92,6 +92,22 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run import-trip -- --operator
 
 Tuonti kertoo virheet rivinumeroineen. Uudelleentuonti päivittää matkan ja henkilöt, mutta ei koske ohjelmaan, jota opas on jo muokannut (ellei anneta `--replace-programme`). Palveluavainta (`service_role`) ei koskaan laiteta sovellukseen.
 
+## Bussipysäkit ja aikataulut
+
+Kohteen bussipysäkit ja niiden aikataulun mukaiset lähdöt tuodaan avoimesta GTFS-aikataulusta. Itävallan aikataulut löytyvät osoitteesta [data.mobilitaetsverbuende.at](https://data.mobilitaetsverbuende.at). Palvelu on ilmainen, mutta vaatii rekisteröitymisen.
+
+```bash
+cd app
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/import-transit.mjs \
+  --trip <matkan uuid> --gtfs ~/Downloads/gtfs.zip --lat 47.3913 --lon 12.6364 --radius 6000 \
+  --source "Mobilitätsverbünde Österreich"
+```
+
+- **Mitä tuodaan:** pysäkit annetun säteen sisältä sekä niiden lähdöt matkan päiville. Uusi ajo korvaa matkan aiemmat pysäkit.
+- **Jos aikataulu ei kata matkaa:** matkan päivät täytetään aikataulun viimeisen viikon samalta viikonpäivältä. Näin käy esimerkiksi silloin, kun ensi kauden aikataulua ei ole vielä julkaistu. Sovellus kertoo tästä.
+- **Ajat ovat aikataulun mukaisia, eivät reaaliaikaisia,** ja sovellus näyttää ne sellaisina. Salzburgin busseille ei ole avointa reaaliaikadataa. Sarake `transit_departures.delay_s` on valmiina live-viiveelle.
+- **Missä näkyy:** Nyt-sivulle tulee kortti "Bussipysäkit ja lähdöt", kun matkalle on tuotu pysäkkejä. Kartta näkyy puhelimessa; selaimessa näkyy vain pysäkkilista.
+
 ## Tarkistukset
 
 ```bash

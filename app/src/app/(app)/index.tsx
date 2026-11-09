@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Timeline } from '@/components/timeline';
 import { Body, Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { useStops } from '@/lib/transit';
 import { useLatestAnnouncement, useMembership, useProgramme, useTripClock } from '@/lib/trip';
 import { deviceTimeZone, formatDay, formatRange, tripDays } from '@/lib/time';
 import { clockTime } from '@/lib/unread';
@@ -16,6 +17,7 @@ export default function Now() {
   const clock = useTripClock(trip.timezone);
   const { items } = useProgramme(trip.id);
   const notice = useLatestAnnouncement(trip.id);
+  const { stops } = useStops(trip.id);
 
   const days = tripDays(trip.starts_on, trip.ends_on);
   const dayIdx = days.indexOf(clock.date);
@@ -79,6 +81,14 @@ export default function Now() {
         </Card>
       )}
 
+      {stops.length ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/buses')}>
+          <Card tone="cream" style={{ gap: 4 }}>
+            <Text style={[styles.strong, { color: c.fg }]}>{t('busesCard')} ›</Text>
+            <Muted>{t('busesCardHint')}</Muted>
+          </Card>
+        </Pressable>
+      ) : null}
     </Screen>
   );
 }

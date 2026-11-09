@@ -275,6 +275,18 @@ const fi = {
   stmtTrip: 'Matka',
   pdfFailed: 'PDF:n luonti ei onnistunut. Yritä uudelleen.',
   statementHint: 'Valitse aikaväli. Alkusaldoon lasketaan kaikki sitä aiemmat tapahtumat. PDF:n voi tallentaa Tiedostoihin tai lähettää.',
+  busesTitle: 'Bussit',
+  busesEyebrow: 'Paikallisliikenne',
+  busesCard: 'Bussipysäkit ja lähdöt',
+  busesCardHint: 'Lähialueen pysäkit kartalla ja seuraavat lähdöt.',
+  nextDepartures: 'Seuraavat lähdöt',
+  scheduledOnly: 'Aikataulun mukaan, ei reaaliaikainen',
+  noDepartures: 'Ei lähtöjä tänään eikä huomenna.',
+  pickStop: 'Valitse pysäkki kartalta tai listasta.',
+  stopsList: 'Pysäkit',
+  busSource: 'Aikataulut: {source}',
+  busProjected: 'Ensi kauden aikataulua ei ole vielä julkaistu. Ajat on arvioitu nykyisen aikataulun mukaan.',
+  tomorrowShort: 'huom.',
 };
 
 export type Messages = { [K in keyof typeof fi]: string };
@@ -540,6 +552,18 @@ const en: Messages = {
   stmtTrip: 'Trip',
   pdfFailed: 'Could not create the PDF. Please try again.',
   statementHint: 'Choose the period. The opening balance includes all earlier entries. You can save the PDF to Files or send it.',
+  busesTitle: 'Buses',
+  busesEyebrow: 'Local transport',
+  busesCard: 'Bus stops and departures',
+  busesCardHint: 'Nearby stops on a map and the next departures.',
+  nextDepartures: 'Next departures',
+  scheduledOnly: 'Timetabled, not live',
+  noDepartures: 'No departures today or tomorrow.',
+  pickStop: 'Choose a stop on the map or in the list.',
+  stopsList: 'Stops',
+  busSource: 'Timetables: {source}',
+  busProjected: 'Next season\'s timetable is not published yet. Times are estimated from the current timetable.',
+  tomorrowShort: 'tmrw',
 };
 
 const sv: Messages = {
@@ -803,6 +827,18 @@ const sv: Messages = {
   stmtTrip: 'Resa',
   pdfFailed: 'Det gick inte att skapa PDF:en. Försök igen.',
   statementHint: 'Välj period. Ingående saldo omfattar alla tidigare händelser. PDF:en kan sparas i Filer eller skickas.',
+  busesTitle: 'Bussar',
+  busesEyebrow: 'Lokaltrafik',
+  busesCard: 'Busshållplatser och avgångar',
+  busesCardHint: 'Hållplatser i närheten på kartan och nästa avgångar.',
+  nextDepartures: 'Nästa avgångar',
+  scheduledOnly: 'Enligt tidtabell, inte i realtid',
+  noDepartures: 'Inga avgångar i dag eller i morgon.',
+  pickStop: 'Välj en hållplats på kartan eller i listan.',
+  stopsList: 'Hållplatser',
+  busSource: 'Tidtabeller: {source}',
+  busProjected: 'Nästa säsongs tidtabell är inte publicerad än. Tiderna är uppskattade utifrån nuvarande tidtabell.',
+  tomorrowShort: 'i morgon',
 };
 
 const de: Messages = {
@@ -1066,6 +1102,18 @@ const de: Messages = {
   stmtTrip: 'Reise',
   pdfFailed: 'Das PDF konnte nicht erstellt werden. Bitte versuche es erneut.',
   statementHint: 'Wähle den Zeitraum. Das Anfangssaldo enthält alle früheren Buchungen. Das PDF kannst du in Dateien sichern oder versenden.',
+  busesTitle: 'Busse',
+  busesEyebrow: 'Öffentlicher Verkehr',
+  busesCard: 'Bushaltestellen und Abfahrten',
+  busesCardHint: 'Haltestellen in der Nähe auf der Karte und die nächsten Abfahrten.',
+  nextDepartures: 'Nächste Abfahrten',
+  scheduledOnly: 'Laut Fahrplan, nicht in Echtzeit',
+  noDepartures: 'Heute und morgen keine Abfahrten.',
+  pickStop: 'Wähle eine Haltestelle auf der Karte oder in der Liste.',
+  stopsList: 'Haltestellen',
+  busSource: 'Fahrpläne: {source}',
+  busProjected: 'Der Fahrplan für die nächste Saison ist noch nicht veröffentlicht. Die Zeiten sind nach dem aktuellen Fahrplan geschätzt.',
+  tomorrowShort: 'morgen',
 };
 
 /** Austrian German: German with Austrian wording and spelling (dates such as "Jänner" come from the de-AT locale). */
@@ -1338,6 +1386,18 @@ const fr: Messages = {
   stmtTrip: 'Voyage',
   pdfFailed: 'Impossible de créer le PDF. Réessayez.',
   statementHint: 'Choisissez la période. Le solde d’ouverture inclut toutes les opérations antérieures. Le PDF peut être enregistré dans Fichiers ou envoyé.',
+  busesTitle: 'Bus',
+  busesEyebrow: 'Transports locaux',
+  busesCard: 'Arrêts de bus et départs',
+  busesCardHint: 'Les arrêts proches sur la carte et les prochains départs.',
+  nextDepartures: 'Prochains départs',
+  scheduledOnly: 'Horaires théoriques, pas en temps réel',
+  noDepartures: 'Aucun départ aujourd’hui ni demain.',
+  pickStop: 'Choisissez un arrêt sur la carte ou dans la liste.',
+  stopsList: 'Arrêts',
+  busSource: 'Horaires : {source}',
+  busProjected: 'Les horaires de la prochaine saison ne sont pas encore publiés. Les heures sont estimées d’après les horaires actuels.',
+  tomorrowShort: 'demain',
 };
 
 export const MESSAGES = { fi, en, sv, de, 'de-AT': deAT, fr };
