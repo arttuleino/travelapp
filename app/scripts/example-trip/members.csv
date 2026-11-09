@@ -1,4 +1,4 @@
-email,role,display_name,booking_ref,party_size,room,phone
-guide@example.com,guide,Sanna Virtanen,,1,,+43 664 123 4567
-laura@example.com,traveller,Laura ja Pekka Niemi,AM-275001,2,108,+358 44 345 6789
-korhonen@example.com,traveller,Korhosen perhe,AM-275002,4,401–402,+358 40 456 7890
+email,role,display_name,booking_ref,party_size,room,phone,market
+guide@example.com,guide,Sanna Virtanen,,1,,+43 664 123 4567,
+laura@example.com,traveller,Laura ja Pekka Niemi,AM-275001,2,108,+358 44 345 6789,FI
+korhonen@example.com,traveller,Korhosen perhe,AM-275002,4,401–402,+358 40 456 7890,FI

@@ -18,6 +18,8 @@ export type Membership = {
   booking_ref: string | null;
   party_size: number;
   room: string | null;
+  /** Booking market (FI, SE, NO): which customer service to show. */
+  market: string | null;
   trip: Trip;
 };
 

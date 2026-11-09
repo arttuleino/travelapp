@@ -83,9 +83,12 @@ export function validateTrip(tripRows, memberRows, programmeRows) {
     if (!['traveller', 'guide'].includes(role)) err('members.csv', r._line, `role pitää olla traveller tai guide, ei "${r.role}"`);
     if (!r.display_name) err('members.csv', r._line, 'display_name puuttuu');
     if (!Number.isInteger(party) || party < 1) err('members.csv', r._line, `party_size ei ole positiivinen kokonaisluku: "${r.party_size}"`);
+    // Booking market (FI, SE or NO): decides which customer service the traveller sees.
+    const market = (r.market ?? '').trim().toUpperCase() || null;
+    if (market && !['FI', 'SE', 'NO'].includes(market)) err('members.csv', r._line, `market pitää olla FI, SE tai NO, ei "${r.market}"`);
     return {
       email, role, display_name: r.display_name, booking_ref: r.booking_ref || null,
-      party_size: party, room: r.room || null, phone: r.phone || null,
+      party_size: party, room: r.room || null, phone: r.phone || null, market,
     };
   });
   if (!members.some((m) => m.role === 'guide')) errors.push('members.csv: matkalla ei ole yhtään opasta (role = guide)');

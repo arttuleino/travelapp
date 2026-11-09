@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Imports one trip from three CSV files exported from the booking system:
 //   trip.csv       external_ref,name,destination,country,starts_on,ends_on,timezone,hotel_name
-//   members.csv    email,role,display_name,booking_ref,party_size,room,phone
+//   members.csv    email,role,display_name,booking_ref,party_size,room,phone[,market FI|SE|NO]
 //   programme.csv  day,starts_at,title,details
 //
 // Usage (from app/):
