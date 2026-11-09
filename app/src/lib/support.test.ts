@@ -6,6 +6,7 @@ import { CUSTOMER_SERVICE, hoursText, isOpen, marketFor } from './support.ts';
 test('marketFor uses the booking market, else the app language', () => {
   assert.equal(marketFor('NO', 'fi'), 'NO');
   assert.equal(marketFor(null, 'sv'), 'SE');
+  assert.equal(marketFor(null, 'no'), 'NO');
   assert.equal(marketFor(undefined, 'de'), 'FI');
 });
 

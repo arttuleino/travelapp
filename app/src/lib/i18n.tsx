@@ -13,9 +13,7 @@ export const LANGUAGES: { code: Lang; name: string; locale: string }[] = [
   { code: 'fi', name: 'Suomi', locale: 'fi-FI' },
   { code: 'en', name: 'English', locale: 'en-GB' },
   { code: 'sv', name: 'Svenska', locale: 'sv-SE' },
-  { code: 'de', name: 'Deutsch', locale: 'de-DE' },
-  { code: 'de-AT', name: 'Deutsch (Österreich)', locale: 'de-AT' },
-  { code: 'fr', name: 'Français', locale: 'fr-FR' },
+  { code: 'no', name: 'Norsk', locale: 'nb-NO' },
 ];
 
 const DEFAULT_LANG: Lang = 'fi';
