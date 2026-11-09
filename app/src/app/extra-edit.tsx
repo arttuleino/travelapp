@@ -7,6 +7,7 @@ import { parseAmount } from '@/lib/cashbook';
 import type { Extra } from '@/lib/extras-calc';
 import { deleteExtra, saveExtra, useExtras } from '@/lib/extras';
 import { useI18n } from '@/lib/i18n';
+import { hasCashEntries } from '@/lib/programme';
 import { formatDay, normalizeTime, tripDays, weekdayShort } from '@/lib/time';
 import { useMembership, useProgramme, useTripClock } from '@/lib/trip';
 import { space, usePalette } from '@/theme';
@@ -99,8 +100,8 @@ function ExtraForm({ existing }: { existing: Extra | null }) {
     try {
       await deleteExtra(existing.id);
       router.dismissTo('/extras');
-    } catch {
-      setError(t('deleteFailed'));
+    } catch (e) {
+      setError(t(hasCashEntries(e) ? 'deleteExtraHasEntries' : 'deleteFailed'));
       setBusy(false);
     }
   }
