@@ -52,6 +52,22 @@ const ICONS = {
     { t: 'circle', cx: '9', cy: '8', r: '3.5' },
     { t: 'path', d: 'M2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 7M18 13.5a7 7 0 0 1 4 6.5' },
   ],
+  // Map tab and resort map pins.
+  map: [
+    { t: 'path', d: 'M3 6.5l6-2.5 6 2.5 6-2.5v13.5l-6 2.5-6-2.5-6 2.5z' },
+    { t: 'path', d: 'M9 4v13.5M15 6.5V20' },
+  ],
+  lift: [
+    { t: 'path', d: 'M3 4.5l18-2.5M12 3.3V8' },
+    { t: 'rect', x: '6.5', y: '8', width: '11', height: '11', rx: '2.5' },
+    { t: 'path', d: 'M6.5 13h11' },
+  ],
+  ski: [{ t: 'path', d: 'M4 20L15 4M9 20L20 4M8 15.5l3 2M13 15.5l3 2' }],
+  food: [{ t: 'path', d: 'M5 3v5a3 3 0 0 0 6 0V3M8 3v18M18 21V3c-2.5 1.5-3.5 5-3.5 8.5H18' }],
+  bus: [
+    { t: 'rect', x: '4', y: '3', width: '16', height: '14', rx: '3' },
+    { t: 'path', d: 'M4 10h16M8 17v3M16 17v3M8 13.5h.01M16 13.5h.01' },
+  ],
 } satisfies Record<string, Shape[]>;
 
 export type IconName = keyof typeof ICONS;
