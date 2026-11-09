@@ -282,10 +282,13 @@ const fi = {
   nextDepartures: 'Seuraavat lähdöt',
   scheduledOnly: 'Aikataulun mukaan, ei reaaliaikainen',
   noDepartures: 'Ei lähtöjä tänään eikä huomenna.',
-  pickStop: 'Valitse pysäkki kartalta tai listasta.',
+  pickStop: 'Valitse pysäkki kartalta tai valikosta.',
   stopsList: 'Pysäkit',
   busSource: 'Aikataulut: {source}',
   busProjected: 'Ensi kauden aikataulua ei ole vielä julkaistu. Ajat on arvioitu nykyisen aikataulun mukaan.',
+  chooseStop: 'Valitse pysäkki ({n})',
+  searchStop: 'Hae pysäkkiä',
+  noStopMatch: 'Ei osumia.',
   tomorrowShort: 'huom.',
 };
 
@@ -559,10 +562,13 @@ const en: Messages = {
   nextDepartures: 'Next departures',
   scheduledOnly: 'Timetabled, not live',
   noDepartures: 'No departures today or tomorrow.',
-  pickStop: 'Choose a stop on the map or in the list.',
+  pickStop: 'Choose a stop on the map or from the menu.',
   stopsList: 'Stops',
   busSource: 'Timetables: {source}',
   busProjected: 'Next season\'s timetable is not published yet. Times are estimated from the current timetable.',
+  chooseStop: 'Choose a stop ({n})',
+  searchStop: 'Search stops',
+  noStopMatch: 'No matches.',
   tomorrowShort: 'tmrw',
 };
 
@@ -838,6 +844,9 @@ const sv: Messages = {
   stopsList: 'Hållplatser',
   busSource: 'Tidtabeller: {source}',
   busProjected: 'Nästa säsongs tidtabell är inte publicerad än. Tiderna är uppskattade utifrån nuvarande tidtabell.',
+  chooseStop: 'Välj hållplats ({n})',
+  searchStop: 'Sök hållplats',
+  noStopMatch: 'Inga träffar.',
   tomorrowShort: 'i morgon',
 };
 
@@ -1113,6 +1122,9 @@ const de: Messages = {
   stopsList: 'Haltestellen',
   busSource: 'Fahrpläne: {source}',
   busProjected: 'Der Fahrplan für die nächste Saison ist noch nicht veröffentlicht. Die Zeiten sind nach dem aktuellen Fahrplan geschätzt.',
+  chooseStop: 'Haltestelle wählen ({n})',
+  searchStop: 'Haltestelle suchen',
+  noStopMatch: 'Keine Treffer.',
   tomorrowShort: 'morgen',
 };
 
@@ -1397,6 +1409,9 @@ const fr: Messages = {
   stopsList: 'Arrêts',
   busSource: 'Horaires : {source}',
   busProjected: 'Les horaires de la prochaine saison ne sont pas encore publiés. Les heures sont estimées d’après les horaires actuels.',
+  chooseStop: 'Choisir un arrêt ({n})',
+  searchStop: 'Rechercher un arrêt',
+  noStopMatch: 'Aucun résultat.',
   tomorrowShort: 'demain',
 };
 
