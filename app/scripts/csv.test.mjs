@@ -30,6 +30,8 @@ test('validateTrip reports row-level errors', () => {
     { _line: 2, email: 'Guide@Example.com', role: 'guide', display_name: 'G' },
     { _line: 3, email: 'guide@example.com', role: 'traveller', display_name: 'Dup' },
     { _line: 4, email: 'bad', role: 'boss', display_name: '' },
+    { _line: 5, email: 'sv@example.com', role: 'traveller', display_name: 'S', market: 'se' },
+    { _line: 6, email: 'dk@example.com', role: 'traveller', display_name: 'D', market: 'DK' },
   ];
   const programme = [
     { _line: 2, day: '2027-02-15', starts_at: '9:15', title: 'Lasku' },
@@ -43,6 +45,9 @@ test('validateTrip reports row-level errors', () => {
   assert.match(text, /members.csv rivi 3: sähköposti guide@example.com on jo listalla/);
   assert.match(text, /members.csv rivi 4: virheellinen sähköposti/);
   assert.match(text, /members.csv rivi 4: role/);
+  assert.equal(r.members[3].market, 'SE');
+  assert.equal(r.members[0].market, null);
+  assert.match(text, /members.csv rivi 6: market pitää olla FI, SE tai NO/);
   assert.match(text, /programme.csv rivi 3: 2027-03-01 ei ole matkan aikana/);
   assert.match(text, /programme.csv rivi 3: starts_at/);
   assert.match(text, /programme.csv rivi 3: title puuttuu/);

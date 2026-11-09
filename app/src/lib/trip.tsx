@@ -16,7 +16,7 @@ const TripContext = createContext<TripState>({ loading: true, error: null, membe
 async function fetchMembership(email: string): Promise<Omit<TripState, 'reload'>> {
   const { data, error } = await supabase
     .from('trip_members')
-    .select('id, role, display_name, booking_ref, party_size, room, trip:trips(*)')
+    .select('id, role, display_name, booking_ref, party_size, room, market, trip:trips(*)')
     .eq('email', email);
   if (error) return { loading: false, error: error.message, membership: null };
   const rows = (data ?? []) as unknown as Membership[];
