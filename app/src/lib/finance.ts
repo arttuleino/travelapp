@@ -1,3 +1,8 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
+
 import type { CashBook, CashEntry, EntryAccount, EntryKind, ReportLabels } from './cashbook';
 import type { Translate } from './i18n';
 import { supabase } from './supabase';
@@ -108,4 +113,25 @@ function uuid() {
     const r = (Math.random() * 16) | 0;
     return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   });
+}
+
+/**
+ * Turns `html` into a PDF and opens the share sheet, so the guide can save it to Files or send it.
+ * In the browser, opens the print dialog instead (where "Save as PDF" is available).
+ */
+export async function sharePdf(html: string, fileName: string, dialogTitle: string) {
+  if (Platform.OS === 'web') {
+    await Print.printAsync({ html });
+    return;
+  }
+  // A4 at 72 dpi.
+  const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
+  // Give the file a readable name (the printer names it with a random id).
+  let target = uri;
+  if (FileSystem.cacheDirectory) {
+    target = `${FileSystem.cacheDirectory}${fileName}`;
+    await FileSystem.deleteAsync(target, { idempotent: true });
+    await FileSystem.moveAsync({ from: uri, to: target });
+  }
+  await Sharing.shareAsync(target, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle });
 }

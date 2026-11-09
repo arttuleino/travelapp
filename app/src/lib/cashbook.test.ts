@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { arrangementSummaries, balances, money, parseAmount, parseBalance, reportCsv, type CashEntry } from './cashbook.ts';
+import { arrangementSummaries, balances, money, parseAmount, parseBalance, reportCsv, statement, statementHtml, type CashEntry } from './cashbook.ts';
 
 const e = (p: Partial<CashEntry>): CashEntry => ({
   id: String(p.voucher_no),
@@ -69,4 +69,44 @@ test('reportCsv follows the office column order with decimal commas and quoting'
     '1;cost_other;Talvi;-86,40;2027-02-14;bankcard;274;;',
     '5;cost_arrangement;Talvi;-420,00;2027-02-14;cash;274;"Ennakko; ""Hochalm""";Fondue-ilta',
   ]);
+});
+
+test('statement: opening balance includes everything before the range', () => {
+  const book = { opening_bank: 1200, opening_cash: 300, opening_mobile: 0 };
+  const more = [...entries, e({ voucher_no: 6, kind: 'cost_other', account: 'cash', amount: -20, entry_date: '2027-02-16' })];
+  const s = statement(book, more, '2027-02-15', '2027-02-15');
+  // All sample entries are on 14.2., so they are in the opening balance of 15.2.
+  assert.deepEqual(s.opening, { bank: 613.6, cash: 380, mobile: 590 });
+  assert.equal(s.entries.length, 0);
+  assert.deepEqual(statement(book, more, '2027-02-13', '2027-02-13').opening, { bank: 1200, cash: 300, mobile: 0 });
+  const s2 = statement(book, more, '2027-02-15', '2027-02-20');
+  assert.deepEqual(s2.opening, { bank: 613.6, cash: 380, mobile: 590 });
+  assert.deepEqual(s2.result, { bank: 0, cash: -20, mobile: 0 });
+  assert.deepEqual(s2.closing, { bank: 613.6, cash: 360, mobile: 590 });
+  assert.deepEqual(s2.byKind, [{ kind: 'cost_other', amount: -20, count: 1 }]);
+  const all = statement(book, more, '2027-02-13', '2027-02-20');
+  assert.deepEqual(all.byKind.map((k) => [k.kind, k.amount, k.count]), [
+    ['cost_arrangement', -420, 1],
+    ['cost_other', -106.4, 2],
+    ['income_arrangement', 590, 1],
+    ['transfer', 0, 2],
+  ]);
+});
+
+test('statementHtml escapes guide text', () => {
+  const s = statement(null, [e({ voucher_no: 1, comment: '<b>Taxi</b> & co' })], '2027-02-14', '2027-02-14');
+  const words = Object.fromEntries(['account', 'opening', 'change', 'closing', 'total', 'byKind', 'count', 'entries', 'voucher', 'date', 'kindCol', 'comment', 'amount', 'none', 'generated'].map((k) => [k, k]));
+  const html = statementHtml(s, {
+    title: 'Tiliote',
+    facts: [['Matka', 'Saalbach']],
+    money: (n) => n.toFixed(2),
+    date: (d) => d,
+    kind: (k) => k,
+    account: (a) => a,
+    arrangement: () => '',
+    words: words as never,
+  });
+  assert.ok(html.includes('&lt;b&gt;Taxi&lt;/b&gt; &amp; co'));
+  assert.ok(!html.includes('<b>Taxi'));
+  assert.ok(html.includes('<td class="n">-1.00</td>'));
 });
