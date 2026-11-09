@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Body, Button, Card, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import { money } from '@/lib/cashbook';
 import { summarize } from '@/lib/extras-calc';

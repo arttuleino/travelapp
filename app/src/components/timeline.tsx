@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { useI18n } from '@/lib/i18n';
 import { currentIndex, hhmm } from '@/lib/time';
 import type { ProgrammeItem } from '@/lib/types';
@@ -35,7 +36,7 @@ export function Timeline({ items, nowTime, past, onEdit }: Props) {
         const last = i === items.length - 1;
         return (
           <View key={it.id} style={styles.row} accessibilityLabel={`${hhmm(it.starts_at)} ${it.title}${isNow ? `, ${t('inProgress')}` : ''}`}>
-            <Text style={[styles.time, { color: isNow ? c.fg : c.muted, fontWeight: isNow ? '800' : '500' }]}>{hhmm(it.starts_at)}</Text>
+            <Text face="mono" style={[styles.time, { color: isNow ? c.fg : c.muted, fontWeight: isNow ? '800' : '500' }]}>{hhmm(it.starts_at)}</Text>
             <View style={styles.rail}>
               <View style={[styles.line, { backgroundColor: c.line, top: first ? 8 : 0, bottom: last ? undefined : 0, height: last ? 8 : undefined }]} />
               <View

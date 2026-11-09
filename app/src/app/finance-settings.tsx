@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text } from 'react-native';
+import {  } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Body, Button, Field, H2, Muted, Screen } from '@/components/ui';
 import { parseBalance, type CashBook } from '@/lib/cashbook';
 import { accountLabel, saveCashBook, useCashBook } from '@/lib/finance';

@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
   type StyleProp,
@@ -14,15 +13,20 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+
+import { Text } from '@/components/text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TopBar } from '@/components/top-bar';
+import { fontFamily } from '@/fonts';
 import { radius, space, usePalette } from '@/theme';
 
-export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+export function Screen({ children, scroll = true, bar = true }: { children: ReactNode; scroll?: boolean; bar?: boolean }) {
   const c = usePalette();
   const body = <View style={styles.inner}>{children}</View>;
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      {bar ? <TopBar /> : <SafeAreaView edges={['top']} />}
       {/* Keeps the field being typed in above the keyboard; swipe down to close the keyboard. */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {scroll ? (
@@ -37,7 +41,7 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
           body
         )}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -45,11 +49,19 @@ type TextProps = { children: ReactNode; style?: StyleProp<TextStyle>; numberOfLi
 
 export function H1({ children, style }: TextProps) {
   const c = usePalette();
-  return <Text style={[styles.h1, { color: c.fg }, style]}>{children}</Text>;
+  return (
+    <Text face="display" style={[styles.h1, { color: c.fg }, style]}>
+      {children}
+    </Text>
+  );
 }
 export function H2({ children, style }: TextProps) {
   const c = usePalette();
-  return <Text style={[styles.h2, { color: c.fg }, style]}>{children}</Text>;
+  return (
+    <Text face="display" style={[styles.h2, { color: c.fg }, style]}>
+      {children}
+    </Text>
+  );
 }
 export function Body({ children, style, numberOfLines }: TextProps) {
   const c = usePalette();
@@ -112,7 +124,13 @@ export function Button({
         variant !== 'primary' && { borderWidth: 1.5, borderColor: variant === 'danger' ? c.live : c.line },
         style,
       ]}>
-      {busy ? <ActivityIndicator color={fg} /> : <Text style={[styles.btnText, small && { fontSize: 13 }, { color: fg }]}>{label}</Text>}
+      {busy ? (
+        <ActivityIndicator color={fg} />
+      ) : (
+        <Text face="display" style={[styles.btnText, small && { fontSize: 13 }, { color: fg }]}>
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -142,7 +160,9 @@ export function Chip({ label, sub, selected, onPress, small }: { label: string; 
       onPress={onPress}
       style={[styles.chip, { backgroundColor: selected ? c.brand : c.card }]}>
       {sub ? <Text style={[styles.chipSub, { color: selected ? c.brandInk : c.muted }]}>{sub}</Text> : null}
-      <Text style={[styles.chipLabel, small && styles.chipLabelSmall, { color: selected ? c.brandInk : c.fg }]}>{label}</Text>
+      <Text face="display" style={[styles.chipLabel, small && styles.chipLabelSmall, { color: selected ? c.brandInk : c.fg }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -153,18 +173,18 @@ export function Centered({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  inner: { paddingHorizontal: space.l, paddingTop: space.l, gap: space.l, width: '100%', maxWidth: 560, alignSelf: 'center' },
-  h1: { fontSize: 28, fontWeight: '800', letterSpacing: -0.3, lineHeight: 32 },
-  h2: { fontSize: 20, fontWeight: '700' },
+  inner: { paddingHorizontal: space.l, paddingTop: 18, gap: 18, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  h1: { fontSize: 30, fontWeight: '800', letterSpacing: -0.3, lineHeight: 33 },
+  h2: { fontSize: 21, fontWeight: '700', letterSpacing: -0.2 },
   body: { fontSize: 15, lineHeight: 21 },
   small: { fontSize: 13, lineHeight: 18 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
+  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 0.96, textTransform: 'uppercase' },
   card: { borderRadius: radius.card, padding: space.l, gap: space.s },
   btn: { borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', minHeight: 46 },
   btnSmall: { paddingVertical: 7, paddingHorizontal: 13, minHeight: 34 },
   btnText: { fontSize: 15, fontWeight: '700' },
   label: { fontSize: 14, fontWeight: '600' },
-  input: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
+  input: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, fontFamily: fontFamily('body', '400') },
   chip: { borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, minWidth: 58, alignItems: 'center' },
   chipSub: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
   chipLabel: { fontSize: 18, fontWeight: '800' },

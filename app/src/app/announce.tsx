@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Body, Button, Chip, Field, H2, Muted, Screen } from '@/components/ui';
 import { useAnnouncements, useMembers } from '@/lib/chat';
 import { useI18n } from '@/lib/i18n';

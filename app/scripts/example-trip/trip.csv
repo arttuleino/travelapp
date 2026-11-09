@@ -1,2 +1,2 @@
-external_ref,name,destination,country,starts_on,ends_on,timezone,hotel_name
-SA-08-2027,Hiihtomatka Saalbach-Hinterglemm,Saalbach-Hinterglemm,Itävalta,20.2.2027,27.2.2027,Europe/Vienna,Hotel Bergkristall
+external_ref,name,destination,country,starts_on,ends_on,timezone,hotel_name,hotel_stars,hotel_address,hotel_phone,hotel_lift_distance,check_in_time,check_out_time
+SA-08-2027,Hiihtomatka Saalbach-Hinterglemm,Saalbach-Hinterglemm,Itävalta,20.2.2027,27.2.2027,Europe/Vienna,Hotel Bergkristall,4,"Glemmtaler Landesstraße 512, 5753 Saalbach",+43 6541 6232,300 m Schattberg X-press -hissille,15:00,10:00

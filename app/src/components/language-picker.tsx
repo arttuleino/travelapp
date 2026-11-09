@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { LANGUAGES, useI18n } from '@/lib/i18n';
 import { radius, space, usePalette } from '@/theme';
 

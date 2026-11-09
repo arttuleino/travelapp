@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Body, Button, Card, Chip, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import {
   ACCOUNTS,
