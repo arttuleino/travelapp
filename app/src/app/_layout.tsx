@@ -41,6 +41,7 @@ function RootStack() {
         <Stack.Screen name="finance-entry" options={{ presentation: 'modal' }} />
         <Stack.Screen name="finance-settings" options={{ presentation: 'modal' }} />
         <Stack.Screen name="conversation/[id]" />
+        <Stack.Screen name="buses" />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />
