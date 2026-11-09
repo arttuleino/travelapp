@@ -11,6 +11,8 @@ export type Extra = {
   starts_at: string | null; // 'HH:MM:SS'
   price: number; // per person
   programme_item_id: string | null;
+  /** The programme item was created for this extra (and is kept in step with it). */
+  owns_programme_item?: boolean;
   notes: string;
 };
 
