@@ -1,7 +1,9 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, type ScrollViewInstance } from 'react-native';
 
+import { Text } from '@/components/text';
+import { TopBar } from '@/components/top-bar';
+import { fontFamily } from '@/fonts';
 import { useI18n } from '@/lib/i18n';
 import type { Announcement, Message } from '@/lib/types';
 import { clockTime, dayLabel, type FeedItem } from '@/lib/unread';
@@ -46,7 +48,8 @@ export function ChatView({ header, feed, me, timeZone, today, onSend, placeholde
   const words = { today: t('today'), yesterday: t('yesterday'), tomorrow: t('tomorrow') };
   const labels = feed.map((f) => dayLabel(f.at, today, timeZone, words, locale));
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <TopBar />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.header, { borderBottomColor: c.line }]}>{header}</View>
         <ScrollView
@@ -122,7 +125,7 @@ export function ChatView({ header, feed, me, timeZone, today, onSend, placeholde
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -137,7 +140,7 @@ const styles = StyleSheet.create({
   time: { fontSize: 11, opacity: 0.75, marginTop: 2 },
   composer: { borderTopWidth: StyleSheet.hairlineWidth, padding: space.m, gap: space.s },
   row: { flexDirection: 'row', gap: space.s, alignItems: 'flex-end' },
-  input: { flex: 1, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, fontSize: 16, maxHeight: 120 },
+  input: { flex: 1, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, fontSize: 16, maxHeight: 120, fontFamily: fontFamily('body', '400') },
   send: { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 11 },
   quick: { borderWidth: 1.5, borderRadius: 99, paddingHorizontal: 11, paddingVertical: 6 },
 });

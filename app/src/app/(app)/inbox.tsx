@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Button, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useAnnouncements, useGuideUnread, useMembers } from '@/lib/chat';

@@ -1,8 +1,9 @@
 import { useIsFocused } from 'expo-router';
 import { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ChatView } from '@/components/chat-view';
+import { Text } from '@/components/text';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { markAnnouncementsRead, markConversationRead, sendMessage, useAnnouncements, useConversation, useMembers } from '@/lib/chat';

@@ -1,0 +1,3 @@
+direction,flight_date,flight_no,airline,dep_code,dep_city,dep_time,arr_code,arr_city,arr_time,terminal,baggage,transfer
+out,20.2.2027,AY1661,Finnair,HEL,Helsinki,6:45,SZG,Salzburg,8:35,T2,1 × 23 kg + suksipussi,"Bussi Salzburgista hotelliin, sisältyy"
+return,27.2.2027,AY1662,Finnair,SZG,Salzburg,9:25,HEL,Helsinki,13:15,,1 × 23 kg + suksipussi,"Bussi hotellilta klo 06:15, sisältyy"

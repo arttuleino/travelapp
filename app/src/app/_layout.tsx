@@ -4,11 +4,14 @@ import { ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Centered } from '@/components/ui';
+import { useAppFonts } from '@/fonts';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { LanguageProvider } from '@/lib/i18n';
 import { TripProvider } from '@/lib/trip';
 
 export default function RootLayout() {
+  // Wait for the app typefaces so text does not jump from the system font on start.
+  if (!useAppFonts()) return null;
   return (
     <SafeAreaProvider>
       <LanguageProvider>

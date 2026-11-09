@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Timeline } from '@/components/timeline';
 import { Body, Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';

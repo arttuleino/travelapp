@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { useAuth } from './auth';
 import { DEMO_NOW, supabase } from './supabase';
 import { pickActiveTrip, tripClock, type Clock } from './time';
-import type { Announcement, Membership, ProgrammeItem } from './types';
+import type { Announcement, Flight, Membership, ProgrammeItem } from './types';
 
 type TripState = {
   loading: boolean;
@@ -16,7 +16,7 @@ const TripContext = createContext<TripState>({ loading: true, error: null, membe
 async function fetchMembership(email: string): Promise<Omit<TripState, 'reload'>> {
   const { data, error } = await supabase
     .from('trip_members')
-    .select('id, role, display_name, booking_ref, party_size, room, market, trip:trips(*)')
+    .select('id, role, display_name, booking_ref, party_size, room, market, room_type, trip:trips(*)')
     .eq('email', email);
   if (error) return { loading: false, error: error.message, membership: null };
   const rows = (data ?? []) as unknown as Membership[];
@@ -139,4 +139,12 @@ export function useProgramme(tripId: string) {
 export function useLatestAnnouncement(tripId: string): Announcement | null {
   const { rows } = useLiveTable<Announcement>('announcements', 'trip_id', tripId, latestAnnouncementQuery, 60_000);
   return rows[0] ?? null;
+}
+
+const flightsQuery = (tripId: string) => supabase.from('trip_flights').select('*').eq('trip_id', tripId).order('flight_date').order('dep_time');
+
+/** The trip's flights from the booking data (outbound first). */
+export function useFlights(tripId: string) {
+  const { rows, loading } = useLiveTable<Flight>('trip_flights', 'trip_id', tripId, flightsQuery);
+  return { flights: rows, loading };
 }

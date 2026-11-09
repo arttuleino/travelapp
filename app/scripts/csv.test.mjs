@@ -52,3 +52,24 @@ test('validateTrip reports row-level errors', () => {
   assert.match(text, /programme.csv rivi 3: starts_at/);
   assert.match(text, /programme.csv rivi 3: title puuttuu/);
 });
+
+test('validateTrip reads hotel details and the optional flights file', () => {
+  const trip = [{ _line: 2, external_ref: 'X', name: 'N', destination: 'D', starts_on: '20.2.2027', ends_on: '27.2.2027', hotel_stars: '4', check_in_time: '15.00' }];
+  const members = [{ _line: 2, email: 'g@x.fi', role: 'guide', display_name: 'G' }, { _line: 3, email: 't@x.fi', display_name: 'T', room_type: 'Kahden hengen huone' }];
+  const flights = [
+    { _line: 2, direction: 'OUT', flight_date: '20.2.2027', flight_no: 'AY1661', dep_code: 'hel', dep_time: '6:45', arr_code: 'SZG', arr_time: '8:35' },
+    { _line: 3, direction: 'back', flight_date: '', flight_no: '', dep_code: 'SZG', dep_time: '25:00', arr_code: 'HEL', arr_time: '13:15' },
+  ];
+  const r = validateTrip(trip, members, [], flights);
+  assert.equal(r.trip.hotel_stars, 4);
+  assert.equal(r.trip.check_in_time, '15:00');
+  assert.equal(r.members[1].room_type, 'Kahden hengen huone');
+  assert.deepEqual([r.flights[0].direction, r.flights[0].dep_code, r.flights[0].dep_time], ['out', 'HEL', '06:45']);
+  assert.deepEqual(r.errors, [
+    'flights.csv rivi 3: direction pitää olla out tai return, ei "back"',
+    'flights.csv rivi 3: flight_date ei ole päivämäärä: ""',
+    'flights.csv rivi 3: dep_time ei ole kellonaika: "25:00"',
+    'flights.csv rivi 3: flight_no puuttuu',
+  ]);
+  assert.match(validateTrip([{ ...trip[0], hotel_stars: '6' }], members, []).errors[0], /hotel_stars/);
+});

@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ChatView } from '@/components/chat-view';
+import { Text } from '@/components/text';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { markConversationRead, sendMessage, useConversation, useMembers } from '@/lib/chat';

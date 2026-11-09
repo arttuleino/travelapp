@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Body, Button, Chip, Field, H2, Muted, Screen } from '@/components/ui';
 import { KINDS, accountsFor, parseAmount, takesArrangement, type CashEntry, type EntryAccount, type EntryKind } from '@/lib/cashbook';
 import { accountLabel, deleteEntry, kindLabel, saveEntry, saveTransfer, useCashEntries } from '@/lib/finance';

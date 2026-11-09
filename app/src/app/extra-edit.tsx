@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
+import { Text } from '@/components/text';
 import { Body, Button, Chip, Field, H2, Muted, Screen } from '@/components/ui';
 import { parseAmount } from '@/lib/cashbook';
 import type { Extra } from '@/lib/extras-calc';

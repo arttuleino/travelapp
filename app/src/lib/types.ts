@@ -9,6 +9,30 @@ export type Trip = {
   ends_on: string;
   timezone: string;
   hotel_name: string | null;
+  hotel_stars?: number | null;
+  hotel_address?: string | null;
+  hotel_phone?: string | null;
+  hotel_lift_distance?: string | null;
+  check_in_time?: string | null; // 'HH:MM:SS' on starts_on
+  check_out_time?: string | null; // 'HH:MM:SS' on ends_on
+};
+
+export type Flight = {
+  id: string;
+  trip_id: string;
+  direction: 'out' | 'return';
+  flight_date: string;
+  flight_no: string;
+  airline: string | null;
+  dep_code: string;
+  dep_city: string | null;
+  dep_time: string;
+  arr_code: string;
+  arr_city: string | null;
+  arr_time: string;
+  terminal: string | null;
+  baggage: string | null;
+  transfer: string | null;
 };
 
 export type Membership = {
@@ -20,6 +44,8 @@ export type Membership = {
   room: string | null;
   /** Booking market (FI, SE, NO): which customer service to show. */
   market: string | null;
+  /** Room type and board, e.g. "Kahden hengen huone, parveke, puolihoito". */
+  room_type?: string | null;
   trip: Trip;
 };
 
