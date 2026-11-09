@@ -56,7 +56,7 @@ export function LanguageChips() {
   );
 }
 
-const shortName = (code: string) => (code === 'de-AT' ? 'AT' : code.toUpperCase());
+const shortName = (code: string) => code.toUpperCase();
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderRadius: radius.card },

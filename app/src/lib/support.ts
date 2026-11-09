@@ -58,7 +58,7 @@ export const CUSTOMER_SERVICE: Record<Market, CustomerService> = {
 /** The booking's market, or a guess from the app language when the booking data has none. */
 export function marketFor(market: string | null | undefined, lang: string): Market {
   if (market === 'FI' || market === 'SE' || market === 'NO') return market;
-  return lang === 'sv' ? 'SE' : 'FI';
+  return lang === 'sv' ? 'SE' : lang === 'no' ? 'NO' : 'FI';
 }
 
 /** '10–13 & 15–17' */
