@@ -10,6 +10,7 @@ import { usePalette } from '@/theme';
 const ICON: Record<string, IconName> = {
   index: 'home',
   programme: 'cal',
+  map: 'map',
   chat: 'chat',
   inbox: 'chat',
   finance: 'euro',

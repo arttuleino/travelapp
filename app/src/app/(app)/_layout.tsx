@@ -66,6 +66,7 @@ function TripTabs() {
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" options={{ title: t('tabNow') }} />
       <Tabs.Screen name="programme" options={{ title: t('tabProgramme') }} />
+      <Tabs.Screen name="map" options={{ title: t('tabMap') }} />
       <Tabs.Screen name="chat" options={{ title: t('tabGuide'), href: guide ? null : undefined, tabBarBadge: badge(travellerUnread) }} />
       <Tabs.Screen name="inbox" options={{ title: t('tabMessages'), href: guide ? undefined : null, tabBarBadge: badge(guideUnread) }} />
       {/* The trip cash book is for guides only (and needs Supabase, so not in demo mode). */}

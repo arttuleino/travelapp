@@ -353,6 +353,19 @@ const fi = {
   paidToCashbook: 'Paikan päällä merkityt maksut kirjautuvat Talous-sivulle tuloiksi.',
   extraNotFound: 'Lisäpalvelua ei löytynyt. Se on ehkä poistettu.',
   tomorrowShort: 'huom.',
+
+  // Map tab
+  tabMap: 'Kartta',
+  mapApprox: 'Kartta on suuntaa-antava, ei mittakaavassa.',
+  mapDrag: 'Vedä karttaa sivuttain ja napauta merkkiä.',
+  mapOpenMaps: 'Avaa Google Mapsissa',
+  mapInProgramme: 'Ohjelmassa',
+  mapNoMap: 'Tälle kohteelle ei ole vielä karttaa.',
+  mapKindHotel: 'Hotelli',
+  mapKindLift: 'Hissi',
+  mapKindRental: 'Suksivuokraamo',
+  mapKindFood: 'Ravintola',
+  mapKindBus: 'Skibussi',
 };
 
 export type Messages = { [K in keyof typeof fi]: string };
@@ -696,6 +709,19 @@ const en: Messages = {
   paidToCashbook: 'Payments marked here are recorded as income in Finance.',
   extraNotFound: 'Extra not found. It may have been deleted.',
   tomorrowShort: 'tmrw',
+
+  // Map tab
+  tabMap: 'Map',
+  mapApprox: 'The map is approximate, not to scale.',
+  mapDrag: 'Drag the map sideways and tap a pin.',
+  mapOpenMaps: 'Open in Google Maps',
+  mapInProgramme: 'In the programme',
+  mapNoMap: 'There is no map for this destination yet.',
+  mapKindHotel: 'Hotel',
+  mapKindLift: 'Lift',
+  mapKindRental: 'Ski rental',
+  mapKindFood: 'Restaurant',
+  mapKindBus: 'Ski bus',
 };
 
 const sv: Messages = {
@@ -1037,6 +1063,19 @@ const sv: Messages = {
   paidToCashbook: 'Betalningar som markeras här bokförs som intäkter under Ekonomi.',
   extraNotFound: 'Tilläggstjänsten hittades inte. Den kan ha tagits bort.',
   tomorrowShort: 'i morgon',
+
+  // Map tab
+  tabMap: 'Karta',
+  mapApprox: 'Kartan är ungefärlig och inte skalenlig.',
+  mapDrag: 'Dra kartan i sidled och tryck på en markering.',
+  mapOpenMaps: 'Öppna i Google Maps',
+  mapInProgramme: 'I programmet',
+  mapNoMap: 'Det finns ingen karta för det här resmålet än.',
+  mapKindHotel: 'Hotell',
+  mapKindLift: 'Lift',
+  mapKindRental: 'Skiduthyrning',
+  mapKindFood: 'Restaurang',
+  mapKindBus: 'Skidbuss',
 };
 
 /** Norwegian (bokmål). */
@@ -1364,6 +1403,19 @@ const no: Messages = {
   paidToCashbook: 'Betalinger som markeres her, bokføres som inntekter under Økonomi.',
   extraNotFound: 'Fant ikke tilleggstjenesten. Den kan ha blitt slettet.',
   tomorrowShort: 'i morgen',
+
+  // Map tab
+  tabMap: 'Kart',
+  mapApprox: 'Kartet er omtrentlig og ikke i målestokk.',
+  mapDrag: 'Dra kartet sidelengs og trykk på en markør.',
+  mapOpenMaps: 'Åpne i Google Maps',
+  mapInProgramme: 'I programmet',
+  mapNoMap: 'Det finnes ikke noe kart for dette reisemålet ennå.',
+  mapKindHotel: 'Hotell',
+  mapKindLift: 'Heis',
+  mapKindRental: 'Skiutleie',
+  mapKindFood: 'Restaurant',
+  mapKindBus: 'Skibuss',
 };
 
 export const MESSAGES = { fi, en, sv, no };
