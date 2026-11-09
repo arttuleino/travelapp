@@ -4,7 +4,7 @@ import { ScrollView, Switch, Text, View } from 'react-native';
 
 import { Body, Button, Chip, Field, H2, Muted, Screen } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
-import { changeNotice, deleteItem, postAnnouncement, saveItem, type ItemInput } from '@/lib/programme';
+import { changeNotice, deleteItem, hasCashEntries, postAnnouncement, saveItem, type ItemInput } from '@/lib/programme';
 import { useMembership, useProgramme, useTripClock } from '@/lib/trip';
 import { hhmm, normalizeTime, tripDays, weekdayShort } from '@/lib/time';
 import type { ProgrammeItem } from '@/lib/types';
@@ -87,8 +87,8 @@ function EditForm({ existing, initialDay }: { existing: ProgrammeItem | null; in
         await postAnnouncement(trip.id, n.title, n.body, display_name);
       }
       router.back();
-    } catch {
-      setError(t('deleteFailed'));
+    } catch (e) {
+      setError(t(hasCashEntries(e) ? 'deleteItemHasEntries' : 'deleteFailed'));
       setBusy(false);
     }
   }

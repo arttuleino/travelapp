@@ -14,6 +14,9 @@ export async function saveItem(input: ItemInput, id?: string) {
   if (error) throw error;
 }
 
+/** True when a delete was refused because cash book entries are booked on the programme item. */
+export const hasCashEntries = (e: unknown) => (e as { hint?: string } | null)?.hint === 'has_cash_entries';
+
 export async function deleteItem(id: string) {
   const { error } = await supabase.from('programme_items').delete().eq('id', id);
   if (error) throw error;
