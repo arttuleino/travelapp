@@ -131,3 +131,114 @@ export function reportCsv(book: CashBook | null, entries: CashEntry[], labels: R
 // Supabase returns numeric columns as strings; keep sums in whole cents to avoid float drift.
 const num = (v: unknown) => (typeof v === 'number' ? v : Number(v ?? 0) || 0);
 const cents = (n: number) => Math.round(n * 100) / 100;
+
+export type Statement = {
+  from: string;
+  to: string;
+  opening: Balances;
+  result: Balances;
+  closing: Balances;
+  /** Entries dated within the range, in voucher order. */
+  entries: CashEntry[];
+  /** Totals per kind of entry within the range (kinds with entries only). */
+  byKind: { kind: EntryKind; amount: number; count: number }[];
+};
+
+/**
+ * Account statement for the days `from`..`to` (inclusive): balances at the start of `from`
+ * (opening balance plus everything earlier), the change within the range and the closing balance.
+ */
+export function statement(book: Pick<CashBook, 'opening_bank' | 'opening_cash' | 'opening_mobile'> | null, entries: CashEntry[], from: string, to: string): Statement {
+  const before = balances(book, entries.filter((e) => e.entry_date < from));
+  const inRange = entries.filter((e) => e.entry_date >= from && e.entry_date <= to).sort((a, b) => a.voucher_no - b.voucher_no);
+  const within = balances({ opening_bank: before.closing.bank, opening_cash: before.closing.cash, opening_mobile: before.closing.mobile }, inRange);
+  const byKind = KINDS.map((kind) => {
+    const of = inRange.filter((e) => e.kind === kind);
+    return { kind, amount: cents(of.reduce((s, e) => s + num(e.amount), 0)), count: of.length };
+  }).filter((k) => k.count > 0);
+  return { from, to, opening: within.opening, result: within.result, closing: within.closing, entries: inRange, byKind };
+}
+
+export type StatementText = {
+  title: string;
+  /** Header facts, e.g. trip, destination number, guide, period, currency. */
+  facts: [string, string][];
+  money: (n: number) => string;
+  date: (d: string) => string;
+  kind: (k: EntryKind) => string;
+  account: (a: EntryAccount) => string;
+  arrangement: (id: string | null) => string;
+  /** Column and section labels. */
+  words: {
+    account: string;
+    opening: string;
+    change: string;
+    closing: string;
+    total: string;
+    byKind: string;
+    count: string;
+    entries: string;
+    voucher: string;
+    date: string;
+    kindCol: string;
+    comment: string;
+    amount: string;
+    none: string;
+    generated: string;
+  };
+};
+
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** The statement as a printable A4 HTML page (turned into a PDF on the phone). */
+export function statementHtml(s: Statement, x: StatementText): string {
+  const w = x.words;
+  const m = (n: number) => esc(x.money(n));
+  const sum = (b: Balances) => b.bank + b.cash + b.mobile;
+  const balanceRows = ACCOUNTS.map(
+    (a) => `<tr><td>${esc(x.account(a))}</td><td class="n">${m(s.opening[a])}</td><td class="n">${m(s.result[a])}</td><td class="n b">${m(s.closing[a])}</td></tr>`,
+  ).join('');
+  const kindRows = s.byKind
+    .map((k) => `<tr><td>${esc(x.kind(k.kind))}</td><td class="n">${k.count}</td><td class="n">${m(k.amount)}</td></tr>`)
+    .join('');
+  const entryRows = s.entries
+    .map((e) => {
+      const detail = [x.kind(e.kind), x.arrangement(e.programme_item_id)].filter(Boolean).map(esc).join('<br><span class="muted">') + (x.arrangement(e.programme_item_id) ? '</span>' : '');
+      return `<tr><td>${e.voucher_no}</td><td class="nw">${esc(x.date(e.entry_date))}</td><td>${detail}</td><td>${esc(x.account(e.account))}</td><td>${esc(e.comment)}</td><td class="n">${m(num(e.amount))}</td></tr>`;
+    })
+    .join('');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(x.title)}</title><style>
+@page { size: A4; margin: 16mm 14mm; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, 'Helvetica Neue', Roboto, Arial, sans-serif; color: #16160F; font-size: 10.5pt; margin: 0; }
+h1 { font-size: 18pt; margin: 0 0 2mm; }
+h2 { font-size: 11.5pt; margin: 7mm 0 2mm; }
+.bar { height: 2.2mm; background: #FFE76A; border-radius: 2mm; margin: 0 0 4mm; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 1mm 6mm; margin: 0; }
+.facts dt { color: #5E5B48; } .facts dd { margin: 0; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; color: #5E5B48; border-bottom: 1.5px solid #16160F; padding: 1.5mm 2mm; font-size: 9pt; }
+td { padding: 1.5mm 2mm; border-bottom: 0.5px solid #E8E2C2; vertical-align: top; }
+tr { page-break-inside: avoid; }
+.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+th.n { text-align: right; }
+.b { font-weight: 700; } .nw { white-space: nowrap; } .muted { color: #5E5B48; font-size: 9pt; }
+tfoot td { border-bottom: none; border-top: 1.5px solid #16160F; font-weight: 700; }
+.foot { margin-top: 8mm; color: #5E5B48; font-size: 8.5pt; }
+</style></head><body>
+<h1>${esc(x.title)}</h1><div class="bar"></div>
+<dl class="facts">${x.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+<div style="height:5mm"></div>
+<table><thead><tr><th>${esc(w.account)}</th><th class="n">${esc(w.opening)}</th><th class="n">${esc(w.change)}</th><th class="n">${esc(w.closing)}</th></tr></thead>
+<tbody>${balanceRows}</tbody>
+<tfoot><tr><td>${esc(w.total)}</td><td class="n">${m(sum(s.opening))}</td><td class="n">${m(sum(s.result))}</td><td class="n">${m(sum(s.closing))}</td></tr></tfoot></table>
+${s.byKind.length ? `<h2>${esc(w.byKind)}</h2><table><thead><tr><th>${esc(w.kindCol)}</th><th class="n">${esc(w.count)}</th><th class="n">${esc(w.amount)}</th></tr></thead><tbody>${kindRows}</tbody></table>` : ''}
+<h2>${esc(w.entries)}</h2>
+${
+  s.entries.length
+    ? `<table><thead><tr><th>${esc(w.voucher)}</th><th>${esc(w.date)}</th><th>${esc(w.kindCol)}</th><th>${esc(w.account)}</th><th>${esc(w.comment)}</th><th class="n">${esc(w.amount)}</th></tr></thead><tbody>${entryRows}</tbody></table>`
+    : `<p class="muted">${esc(w.none)}</p>`
+}
+<p class="foot">${esc(w.generated)}</p>
+</body></html>`;
+}

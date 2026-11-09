@@ -1,12 +1,26 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Share, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, Text, View } from 'react-native';
 
 import { Body, Button, Card, Chip, Eyebrow, H1, Muted, Screen } from '@/components/ui';
-import { ACCOUNTS, arrangementSummaries, balances, isCost, isIncome, money, newestFirst, reportCsv, type Account, type CashEntry } from '@/lib/cashbook';
-import { accountLabel, kindLabel, reportLabels, useCashBook, useCashEntries } from '@/lib/finance';
+import {
+  ACCOUNTS,
+  arrangementSummaries,
+  balances,
+  isCost,
+  isIncome,
+  money,
+  newestFirst,
+  reportCsv,
+  statement,
+  statementHtml,
+  type Account,
+  type CashEntry,
+} from '@/lib/cashbook';
+import { accountLabel, kindLabel, reportLabels, sharePdf, useCashBook, useCashEntries } from '@/lib/finance';
 import { useI18n } from '@/lib/i18n';
-import { formatDay, formatRange } from '@/lib/time';
+import { clockTime } from '@/lib/unread';
+import { deviceTimeZone, deviceToday, formatDay, formatRange, tripDays, weekdayShort } from '@/lib/time';
 import { useMembership, useProgramme } from '@/lib/trip';
 import type { ProgrammeItem } from '@/lib/types';
 import { space, usePalette } from '@/theme';
@@ -240,9 +254,102 @@ function Report({ entries, arrangementName }: { entries: CashEntry[]; arrangemen
         ))}
       </Card>
 
-      <Button label={t('shareReport')} onPress={share} disabled={entries.length === 0} />
+      <StatementPicker entries={entries} arrangementName={arrangementName} />
+
+      <Button label={t('shareReport')} variant="ghost" onPress={share} disabled={entries.length === 0} />
       <Button label={t('editCashBook')} variant="ghost" onPress={() => router.push('/finance-settings')} />
       <Muted>{t('reportHint')}</Muted>
     </View>
+  );
+}
+
+/** Pick a date range and download the account statement for it as a PDF. */
+function StatementPicker({ entries, arrangementName }: { entries: CashEntry[]; arrangementName: (id: string | null, short?: boolean) => string }) {
+  const c = usePalette();
+  const { t, locale } = useI18n();
+  const { trip, display_name } = useMembership();
+  const { book } = useCashBook(trip.id);
+  const days = tripDays(trip.starts_on, trip.ends_on);
+  const [from, setFrom] = useState(days[0]);
+  const [to, setTo] = useState(days[days.length - 1]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function pickFrom(d: string) {
+    setFrom(d);
+    if (d > to) setTo(d);
+  }
+  function pickTo(d: string) {
+    setTo(d);
+    if (d < from) setFrom(d);
+  }
+
+  async function download() {
+    setBusy(true);
+    setError(null);
+    const s = statement(book, entries, from, to);
+    const range = from === to ? formatDay(from, locale) : `${formatDay(from, locale)} – ${formatDay(to, locale)}`;
+    const now = new Date();
+    const html = statementHtml(s, {
+      title: `${t('statementTitle')} · ${trip.destination}`,
+      facts: [
+        [t('stmtTrip'), trip.name],
+        [t('destNumber'), book?.dest_number || '–'],
+        [t('department'), book?.department || '–'],
+        [t('responsible'), book?.responsible || display_name],
+        [t('period'), range],
+        [t('currency'), book?.currency ?? 'EUR'],
+      ],
+      money: (n) => money(n, locale),
+      date: (d) => formatDay(d, locale),
+      kind: (k) => kindLabel(t, k),
+      account: (a) => accountLabel(t, a),
+      arrangement: (id) => arrangementName(id),
+      words: {
+        account: t('account'),
+        opening: t('openingBalance'),
+        change: t('stmtChange'),
+        closing: t('closingBalance'),
+        total: t('stmtTotal'),
+        byKind: t('stmtByKind'),
+        count: t('stmtCount'),
+        entries: t('stmtEntries'),
+        voucher: t('csvVoucher'),
+        date: t('csvDate'),
+        kindCol: t('csvKind'),
+        comment: t('csvComment'),
+        amount: t('csvAmount'),
+        none: t('stmtNone'),
+        generated: t('stmtGenerated', { date: formatDay(deviceToday(), locale), time: clockTime(now.toISOString(), deviceTimeZone()) }),
+      },
+    });
+    const slug = trip.destination.normalize('NFD').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'trip';
+    try {
+      await sharePdf(html, `${t('statementTitle')}-${slug}-${from}_${to}.pdf`, t('statementTitle'));
+    } catch {
+      setError(t('pdfFailed'));
+    }
+    setBusy(false);
+  }
+
+  const dayChips = (value: string, onPick: (d: string) => void) => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.s }}>
+      {days.map((d) => (
+        <Chip key={d} sub={weekdayShort(d, locale)} label={String(Number(d.slice(8)))} selected={d === value} onPress={() => onPick(d)} />
+      ))}
+    </ScrollView>
+  );
+
+  return (
+    <Card style={{ gap: space.s }}>
+      <Body style={{ fontWeight: '700' }}>{t('statementSection')}</Body>
+      <Muted>{t('statementHint')}</Muted>
+      <Muted style={{ fontWeight: '700' }}>{t('rangeFrom')}</Muted>
+      {dayChips(from, pickFrom)}
+      <Muted style={{ fontWeight: '700' }}>{t('rangeTo')}</Muted>
+      {dayChips(to, pickTo)}
+      {error ? <Text style={{ color: c.live }}>{error}</Text> : null}
+      <Button label={t('downloadPdf')} onPress={download} busy={busy} />
+    </Card>
   );
 }
