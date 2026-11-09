@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { TransitMap } from '@/components/transit-map';
 import { Body, Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { hhmm } from '@/lib/time';
-import { useNextDepartures, useStops, useTransitImport } from '@/lib/transit';
+import { useNextDepartures, useStops, useTransitImport, type TransitStop } from '@/lib/transit';
 import { useMembership, useTripClock } from '@/lib/trip';
 import { space, usePalette } from '@/theme';
 
@@ -30,6 +30,7 @@ export default function Buses() {
       </View>
 
       <TransitMap stops={stops} selected={selected} onSelect={setSelected} />
+      <StopPicker stops={stops} selected={selected} onSelect={setSelected} />
 
       {stop ? (
         <Card style={{ gap: space.s }}>
@@ -55,22 +56,6 @@ export default function Buses() {
         <Muted>{t('pickStop')}</Muted>
       )}
 
-      <View style={{ gap: space.s }}>
-        <Body style={{ fontWeight: '700' }}>{t('stopsList')}</Body>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }}>
-          {stops.map((s) => (
-            <Pressable
-              key={s.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: s.id === selected }}
-              onPress={() => setSelected(s.id)}
-              style={{ borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: s.id === selected ? c.brand : c.card }}>
-              <Text style={{ color: s.id === selected ? c.brandInk : c.fg, fontSize: 14, fontWeight: '600' }}>{s.name}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
       {meta ? (
         <Muted>
           {t('busSource', { source: meta.source })}
@@ -79,5 +64,74 @@ export default function Buses() {
       ) : null}
       <Button label={t('back')} variant="ghost" onPress={() => router.back()} />
     </Screen>
+  );
+}
+
+/** A collapsed "Choose a stop" button that opens a searchable list, so dozens of stops don't fill the screen. */
+function StopPicker({ stops, selected, onSelect }: { stops: TransitStop[]; selected: string | null; onSelect: (id: string) => void }) {
+  const c = usePalette();
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const current = stops.find((s) => s.id === selected);
+  const q = query.trim().toLowerCase();
+  const shown = q ? stops.filter((s) => s.name.toLowerCase().includes(q)) : stops;
+
+  function pick(id: string) {
+    onSelect(id);
+    setOpen(false);
+    setQuery('');
+  }
+
+  return (
+    <View style={{ gap: space.s }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((o) => !o)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: space.m,
+          borderWidth: 1.5,
+          borderColor: c.line,
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+        }}>
+        <Text style={{ color: c.fg, fontSize: 16, fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>
+          {current?.name ?? t('chooseStop', { n: stops.length })}
+        </Text>
+        <Text style={{ color: c.muted, fontSize: 14 }}>{open ? '▲' : '▼'}</Text>
+      </Pressable>
+      {open ? (
+        <View style={{ borderWidth: 1.5, borderColor: c.line, borderRadius: 12, overflow: 'hidden' }}>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('searchStop')}
+            placeholderTextColor={c.muted}
+            autoCorrect={false}
+            style={{ color: c.fg, fontSize: 16, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.line }}
+          />
+          {shown.map((s) => (
+            <Pressable
+              key={s.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: s.id === selected }}
+              onPress={() => pick(s.id)}
+              style={({ pressed }) => ({
+                paddingHorizontal: 14,
+                paddingVertical: 11,
+                backgroundColor: s.id === selected ? c.brand : pressed ? c.card : 'transparent',
+              })}>
+              <Text style={{ color: s.id === selected ? c.brandInk : c.fg, fontSize: 15 }}>{s.name}</Text>
+            </Pressable>
+          ))}
+          {shown.length === 0 ? <Muted style={{ padding: 14 }}>{t('noStopMatch')}</Muted> : null}
+        </View>
+      ) : null}
+    </View>
   );
 }
