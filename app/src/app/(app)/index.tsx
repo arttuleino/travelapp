@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { Timeline } from '@/components/timeline';
 import { Body, Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
-import { useStops } from '@/lib/transit';
+import { localTransportFor } from '@/lib/local-transport';
 import { useLatestAnnouncement, useMembership, useProgramme, useTripClock } from '@/lib/trip';
 import { deviceTimeZone, formatDay, formatRange, tripDays } from '@/lib/time';
 import { clockTime } from '@/lib/unread';
@@ -17,7 +17,6 @@ export default function Now() {
   const clock = useTripClock(trip.timezone);
   const { items } = useProgramme(trip.id);
   const notice = useLatestAnnouncement(trip.id);
-  const { stops } = useStops(trip.id);
 
   const days = tripDays(trip.starts_on, trip.ends_on);
   const dayIdx = days.indexOf(clock.date);
@@ -81,15 +80,40 @@ export default function Now() {
         </Card>
       )}
 
-      {stops.length ? (
-        <Pressable accessibilityRole="button" onPress={() => router.push('/buses')}>
-          <Card tone="cream" style={{ gap: 4 }}>
-            <Text style={[styles.strong, { color: c.fg }]}>{t('busesCard')} ›</Text>
-            <Muted>{t('busesCardHint')}</Muted>
-          </Card>
-        </Pressable>
-      ) : null}
+      <LocalTransport destination={trip.destination} />
     </Screen>
+  );
+}
+
+/** Recommends the destination's own public transport app (and the ski bus timetable) instead of timetables in this app. */
+function LocalTransport({ destination }: { destination: string }) {
+  const c = usePalette();
+  const { t } = useI18n();
+  const info = localTransportFor(destination);
+  if (!info) return null;
+  const open = (url: string) => Linking.openURL(url).catch(() => {});
+  const stores = info.app
+    ? Platform.OS === 'ios'
+      ? [['App Store', info.app.ios]]
+      : Platform.OS === 'android'
+        ? [['Google Play', info.app.android]]
+        : [
+            ['App Store', info.app.ios],
+            ['Google Play', info.app.android],
+          ]
+    : [];
+  return (
+    <Card tone="cream" style={{ gap: space.s }}>
+      <Text style={[styles.strong, { color: c.fg }]}>{t('transportTitle')}</Text>
+      <Body>{info.app ? t('transportApp', { app: info.app.name }) : t('transportNoApp')}</Body>
+      {info.skibusFree ? <Muted>{t('skibusFree')}</Muted> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }}>
+        {stores.map(([label, url]) => (
+          <Button key={label} small label={`${label} ›`} onPress={() => open(url)} />
+        ))}
+        {info.skibusUrl ? <Button small variant="ghost" label={`${t('skibusLink')} ›`} onPress={() => open(info.skibusUrl!)} /> : null}
+      </View>
+    </Card>
   );
 }
 
