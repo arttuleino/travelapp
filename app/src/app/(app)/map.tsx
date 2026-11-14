@@ -11,11 +11,23 @@ import { freshness, initials } from '@/lib/guide-location';
 import { useGuideLocations, useGuideSharing } from '@/lib/guide-sharing';
 import { useI18n, type MessageKey } from '@/lib/i18n';
 import { Columns, useWide } from '@/lib/layout';
+import { localTransportFor } from '@/lib/local-transport';
+import type { ServiceKind } from '@/lib/osm-services';
 import { mapFor, noteIn, placeFor, type Place, type PlaceKind } from '@/lib/resort-map';
 import { formatDay, hhmm } from '@/lib/time';
 import { useMembership, useProgramme, useTripClock } from '@/lib/trip';
 import type { ProgrammeItem } from '@/lib/types';
 import { radius, space, usePalette } from '@/theme';
+
+const SERVICE_LABEL: Record<ServiceKind, MessageKey> = {
+  hut: 'mapSvcHut',
+  food: 'mapSvcFood',
+  rental: 'mapSvcRental',
+  school: 'mapSvcSchool',
+  health: 'mapSvcHealth',
+  atm: 'mapSvcAtm',
+  bus: 'mapSvcBus',
+};
 
 const KIND_LABEL: Record<PlaceKind, MessageKey> = {
   hotel: 'mapKindHotel',
@@ -98,6 +110,8 @@ export default function MapScreen() {
   const [fitKey, setFitKey] = useState(0);
   const [base, setBase] = useState<MapBase>('map');
   const [pistes, setPistes] = useState(true);
+  const [services, setServices] = useState(true);
+  const [servicesFailed, setServicesFailed] = useState(false);
   const flyTo = (lat: number, lng: number, zoom?: number) => setFocus({ lat, lng, zoom, key: Date.now() });
   const select = (p: Place, centre = false) => {
     setSelectedId(p.id);
@@ -105,6 +119,7 @@ export default function MapScreen() {
   };
 
   const me = useMyPosition();
+  const skibusUrl = localTransportFor(trip.destination)?.skibusUrl;
 
   if (!map) {
     return (
@@ -185,17 +200,24 @@ export default function MapScreen() {
           base={base}
           pistes={pistes}
           wheelZoom={wide}
+          services={services}
+          serviceLabel={(k) => t(SERVICE_LABEL[k])}
+          openMapsLabel={t('mapOpenMaps')}
+          busTimetable={skibusUrl ? { label: t('mapSkibusTimetable'), url: skibusUrl } : null}
+          onServicesFailed={setServicesFailed}
         />
       </View>
       {LIVE_MAP_REAL ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.s }}>
           <Tool icon="locate" label={t('mapShowMe')} on={me.pos != null} onPress={() => me.locate((p) => flyTo(p.lat, p.lng, 16))} />
           <Tool icon="expand" label={t('mapShowAll')} onPress={() => setFitKey((k) => k + 1)} />
+          <Tool icon="food" label={t('mapServices')} on={services} onPress={() => setServices((v) => !v)} />
           <Tool icon="lift" label={t('mapPistes')} on={pistes} onPress={() => setPistes((v) => !v)} />
           <Tool icon="info" label={t('mapTerrain')} on={base === 'terrain'} onPress={() => setBase((b) => (b === 'terrain' ? 'map' : 'terrain'))} />
           {map.pisteMapUrl ? <Tool icon="external" label={t('mapPisteMap')} onPress={() => open(map.pisteMapUrl!)} /> : null}
         </ScrollView>
       ) : null}
+      {LIVE_MAP_REAL && services ? <Muted>{servicesFailed ? t('mapServicesFailed') : t('mapServicesHint')}</Muted> : null}
       {me.error ? <Muted>{t('mapMeDenied')}</Muted> : me.pos ? <Muted>{t('mapMePrivate')}</Muted> : null}
       {!LIVE_MAP_REAL ? <Muted>{`${t('mapDrag')} ${t('mapApprox')}`}</Muted> : null}
     </View>
@@ -246,7 +268,10 @@ export default function MapScreen() {
           ))}
         </View>
       ) : null}
-      <Button small variant="ghost" label={t('mapOpenMaps')} onPress={() => open(googleMaps(queryOf(selected)))} style={{ alignSelf: 'flex-start' }} />
+      <View style={[styles.row, { flexWrap: 'wrap' }]}>
+        <Button small variant="ghost" label={t('mapOpenMaps')} onPress={() => open(googleMaps(queryOf(selected)))} />
+        {selected.kind === 'bus' && skibusUrl ? <Button small variant="ghost" label={t('mapSkibusTimetable')} onPress={() => open(skibusUrl)} /> : null}
+      </View>
     </Card>
   ) : null;
 

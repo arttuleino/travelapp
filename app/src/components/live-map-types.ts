@@ -1,4 +1,5 @@
 import type { Freshness } from '@/lib/guide-location';
+import type { ServiceKind } from '@/lib/osm-services';
 import type { Place, ResortMap } from '@/lib/resort-map';
 
 export type MapGuide = {
@@ -34,4 +35,12 @@ export type LiveMapProps = {
   pistes: boolean;
   /** Mouse wheel zoom (desktop); on phones the page scrolls instead. */
   wheelZoom: boolean;
+  /** Other services around the resort from OpenStreetMap (browser only). */
+  services: boolean;
+  serviceLabel: (kind: ServiceKind) => string;
+  openMapsLabel: string;
+  /** Extra link on bus stops, e.g. the resort's ski bus timetable. */
+  busTimetable?: { label: string; url: string } | null;
+  /** Called when the services could not be loaded (true) or loaded again (false). */
+  onServicesFailed?: (failed: boolean) => void;
 };
