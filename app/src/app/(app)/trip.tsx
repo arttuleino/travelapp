@@ -7,6 +7,7 @@ import { Text } from '@/components/text';
 import { Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { Columns } from '@/lib/layout';
 import { formatDay } from '@/lib/time';
 import { useFlights, useMembership } from '@/lib/trip';
 import type { Flight } from '@/lib/types';
@@ -29,39 +30,45 @@ export default function TripInfo() {
         <H1>{t('tripInfoTitle')}</H1>
       </View>
 
-      {flights.map((f) => (
-        <FlightCard key={f.id} f={f} />
-      ))}
-      {!loading && !flights.length ? (
-        <Card style={{ flexDirection: 'row', gap: space.m, alignItems: 'center' }}>
-          <Icon name="plane" size={22} color={c.muted} />
-          <Muted style={{ flex: 1 }}>{t('noFlights')}</Muted>
-        </Card>
-      ) : null}
+      {/* On a computer: flights, hotel and booking on the left, contacts and settings on the right. */}
+      <Columns>
+        <>
+          {flights.map((f) => (
+            <FlightCard key={f.id} f={f} />
+          ))}
+          {!loading && !flights.length ? (
+            <Card style={{ flexDirection: 'row', gap: space.m, alignItems: 'center' }}>
+              <Icon name="plane" size={22} color={c.muted} />
+              <Muted style={{ flex: 1 }}>{t('noFlights')}</Muted>
+            </Card>
+          ) : null}
 
-      {trip.hotel_name ? <HotelCard /> : null}
+          {trip.hotel_name ? <HotelCard /> : null}
 
-      <Card style={{ gap: space.s }}>
-        <Eyebrow>{t('yourBooking')}</Eyebrow>
-        <View style={styles.row}>
-          <Text style={styles.strong}>{display_name}</Text>
-          <Muted>{t('persons', { n: party_size })}</Muted>
-        </View>
-        {booking_ref ? <Muted>{t('booking', { ref: booking_ref })}</Muted> : null}
-      </Card>
+          <Card style={{ gap: space.s }}>
+            <Eyebrow>{t('yourBooking')}</Eyebrow>
+            <View style={styles.row}>
+              <Text style={styles.strong}>{display_name}</Text>
+              <Muted>{t('persons', { n: party_size })}</Muted>
+            </View>
+            {booking_ref ? <Muted>{t('booking', { ref: booking_ref })}</Muted> : null}
+          </Card>
+        </>
+        <>
+          <CustomerService market={market} />
 
-      <CustomerService market={market} />
+          <View style={{ gap: space.s }}>
+            <H2>{t('language')}</H2>
+            <Muted>{t('languageHint')}</Muted>
+            <LanguageList />
+          </View>
 
-      <View style={{ gap: space.s }}>
-        <H2>{t('language')}</H2>
-        <Muted>{t('languageHint')}</Muted>
-        <LanguageList />
-      </View>
-
-      <Card tone="cream" style={{ gap: space.s }}>
-        <Muted>{t('signedInAs', { email })}</Muted>
-        <Button label={t('signOut')} variant="danger" onPress={signOut} style={{ alignSelf: 'flex-start' }} />
-      </Card>
+          <Card tone="cream" style={{ gap: space.s }}>
+            <Muted>{t('signedInAs', { email })}</Muted>
+            <Button label={t('signOut')} variant="danger" onPress={signOut} style={{ alignSelf: 'flex-start' }} />
+          </Card>
+        </>
+      </Columns>
     </Screen>
   );
 }

@@ -7,6 +7,7 @@ import { Body, Button, Centered, H2, Muted } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
 import { useGuideUnread, useTravellerUnread } from '@/lib/chat';
 import { useI18n } from '@/lib/i18n';
+import { SidebarContext, useWide } from '@/lib/layout';
 import { listenForNotificationTaps, registerForPush } from '@/lib/push';
 import { DEMO_MODE } from '@/lib/supabase';
 import { useMembership, useTrip } from '@/lib/trip';
@@ -62,8 +63,11 @@ function TripTabs() {
   }, []);
 
   const badge = (n: number) => (n > 0 ? n : undefined);
+  // A wide window (computer) gets the navigation as a sidebar on the left instead of tabs at the bottom.
+  const wide = useWide();
   return (
-    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
+    <SidebarContext.Provider value={wide}>
+    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, tabBarPosition: wide ? 'left' : 'bottom' }}>
       <Tabs.Screen name="index" options={{ title: t('tabNow') }} />
       <Tabs.Screen name="programme" options={{ title: t('tabProgramme') }} />
       <Tabs.Screen name="map" options={{ title: t('tabMap') }} />
@@ -75,5 +79,6 @@ function TripTabs() {
       <Tabs.Screen name="trip" options={{ title: t('tabTrip'), href: guide ? null : undefined }} />
       <Tabs.Screen name="profile" options={{ title: t('tabProfile'), href: guide ? undefined : null }} />
     </Tabs>
+    </SidebarContext.Provider>
   );
 }

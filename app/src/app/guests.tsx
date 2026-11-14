@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { Body, Button, Eyebrow, Field, H1, Muted, Screen } from '@/components/ui';
 import { useMembers } from '@/lib/chat';
 import { useI18n } from '@/lib/i18n';
+import { Grid } from '@/lib/layout';
 import { useMembership } from '@/lib/trip';
 import type { Member } from '@/lib/types';
 import { space, usePalette } from '@/theme';
@@ -20,7 +21,7 @@ export default function GuestsScreen() {
       </Screen>
     );
   return (
-    <Screen>
+    <Screen width="page">
       <View style={{ gap: 4 }}>
         <Eyebrow>{t('groupEyebrow')}</Eyebrow>
         <H1>{t('guestsSeg')}</H1>
@@ -46,8 +47,11 @@ function Guests() {
   return (
     <View style={{ gap: space.s }}>
       <Muted>{t('guestsSummary', { people, bookings: guests.length })}</Muted>
-      <Field label="" value={q} onChangeText={setQ} placeholder={t('searchGuests')} autoCorrect={false} />
+      <View style={{ maxWidth: 520 }}>
+        <Field label="" value={q} onChangeText={setQ} placeholder={t('searchGuests')} autoCorrect={false} />
+      </View>
       {shown.length === 0 ? <Muted>{t('noGuestMatch')}</Muted> : null}
+      <Grid cols={3}>
       {shown.map((g) => (
         <Pressable
           key={g.id}
@@ -80,6 +84,7 @@ function Guests() {
           <Muted numberOfLines={1}>{[g.phone, g.email].filter(Boolean).join(' · ')}</Muted>
         </Pressable>
       ))}
+      </Grid>
     </View>
   );
 }
