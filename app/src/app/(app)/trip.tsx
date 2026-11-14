@@ -48,7 +48,7 @@ export default function TripInfo() {
           <Card style={{ gap: space.s }}>
             <Eyebrow>{t('yourBooking')}</Eyebrow>
             <View style={styles.row}>
-              <Text style={styles.strong}>{display_name}</Text>
+              <Text style={[styles.strong, { color: c.fg }]}>{display_name}</Text>
               <Muted>{t('persons', { n: party_size })}</Muted>
             </View>
             {booking_ref ? <Muted>{t('booking', { ref: booking_ref })}</Muted> : null}
