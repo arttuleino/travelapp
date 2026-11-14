@@ -72,7 +72,7 @@ function TripTabs() {
       <Tabs.Screen name="map" options={{ title: t('tabMap') }} />
       <Tabs.Screen name="chat" options={{ title: t('tabGuide'), href: guide ? null : undefined, tabBarBadge: badge(travellerUnread) }} />
       <Tabs.Screen name="inbox" options={{ title: t('tabMessages'), href: guide ? undefined : null, tabBarBadge: badge(guideUnread) }} />
-      {/* The trip cash book is for guides only (and needs Supabase, so not in demo mode). */}
+      {/* The trip cash book is for guides only. */}
       <Tabs.Screen name="finance" options={{ title: t('tabFinance'), href: guide ? undefined : null }} />
       {/* Travellers get the Matka tab (flights, hotel, customer service); guides keep Profile (guests, extras). */}
       <Tabs.Screen name="trip" options={{ title: t('tabTrip'), href: guide ? null : undefined }} />
