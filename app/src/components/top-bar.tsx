@@ -5,6 +5,7 @@ import { Icon, Mountain } from '@/components/icon';
 import { Text } from '@/components/text';
 import { signOut, useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { CONTENT, useInSidebar, useWide } from '@/lib/layout';
 import { useTrip } from '@/lib/trip';
 import { usePalette } from '@/theme';
 
@@ -16,9 +17,13 @@ export function TopBar() {
   const guide = useTrip().membership?.role === 'guide';
   const bg = guide ? c.brandInk : c.brand;
   const fg = guide ? c.brand : c.brandInk;
+  const wide = useWide();
+  const inSidebar = useInSidebar();
+  // On a wide window the side navigation shows the brand and the sign-out button instead.
+  if (inSidebar) return null;
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: bg }}>
-      <View style={styles.row}>
+      <View style={[styles.row, wide && { maxWidth: CONTENT.full, paddingHorizontal: 32 }]}>
         <View style={styles.mark} accessibilityRole="header">
           <Mountain color={fg} />
           <Text face="display" style={[styles.name, { color: fg }]}>

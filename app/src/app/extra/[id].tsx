@@ -9,6 +9,7 @@ import { useMembers } from '@/lib/chat';
 import { checklistOrder, dueOf, summarize, type Extra, type PaymentMethod, type Signup } from '@/lib/extras-calc';
 import { addSignups, recordPayment, removeSignup, undoPayment, useExtras, useSignups } from '@/lib/extras';
 import { useI18n } from '@/lib/i18n';
+import { CONTENT, Columns } from '@/lib/layout';
 import { formatDay } from '@/lib/time';
 import { useMembership } from '@/lib/trip';
 import type { Member } from '@/lib/types';
@@ -60,31 +61,38 @@ export default function ExtraChecklist() {
   const when = [formatDay(extra.day, locale), extra.starts_at?.slice(0, 5)].filter(Boolean).join(' ');
 
   return (
-    <Screen>
+    <Screen width="page">
       <View style={{ gap: 4 }}>
         <Eyebrow>{`${when} · ${t('perPerson', { price: money(Number(extra.price), locale) })}`}</Eyebrow>
         <H1>{extra.title}</H1>
         <Muted>{t('extraParticipants', { n: sum.bookings, persons: sum.persons })}</Muted>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: space.s }}>
+      <View style={{ flexDirection: 'row', gap: space.s, maxWidth: CONTENT.narrow }}>
         <Total label={t('outstanding')} value={eur(sum.outstanding)} color={sum.outstanding ? c.live : c.fg} />
         <Total label={t('collected')} value={eur(sum.collected)} color={c.ok} />
         <Total label={t('prepaidTotal')} value={eur(sum.prepaid)} color={c.fg} />
       </View>
 
+      {/* On a computer the unpaid and paid lists sit side by side. */}
       {rows.length ? (
-        <>
-          <Eyebrow>{t('unpaidSection', { n: unpaid.length })}</Eyebrow>
-          {unpaid.length === 0 ? <Text style={{ color: c.ok, fontWeight: '800' }}>✓ {t('allPaid')}</Text> : null}
-          {unpaid.map((r) => (
-            <UnpaidRow key={r.id} row={r} extra={extra} />
-          ))}
-          {paid.length ? <Eyebrow>{t('paidSection', { n: paid.length })}</Eyebrow> : null}
-          {paid.map((r) => (
-            <PaidRow key={r.id} row={r} extra={extra} />
-          ))}
-        </>
+        <Columns>
+          <>
+            <Eyebrow>{t('unpaidSection', { n: unpaid.length })}</Eyebrow>
+            {unpaid.length === 0 ? <Text style={{ color: c.ok, fontWeight: '800' }}>✓ {t('allPaid')}</Text> : null}
+            {unpaid.map((r) => (
+              <UnpaidRow key={r.id} row={r} extra={extra} />
+            ))}
+          </>
+          {paid.length ? (
+            <>
+              <Eyebrow>{t('paidSection', { n: paid.length })}</Eyebrow>
+              {paid.map((r) => (
+                <PaidRow key={r.id} row={r} extra={extra} />
+              ))}
+            </>
+          ) : null}
+        </Columns>
       ) : null}
 
       {adding ? (

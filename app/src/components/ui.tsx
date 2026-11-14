@@ -19,11 +19,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TopBar } from '@/components/top-bar';
 import { fontFamily } from '@/fonts';
+import { CONTENT, useInSidebar, useWide } from '@/lib/layout';
 import { radius, space, usePalette } from '@/theme';
 
-export function Screen({ children, scroll = true, bar = true }: { children: ReactNode; scroll?: boolean; bar?: boolean }) {
+/**
+ * A page. `width` is how wide the content may grow on a wide window: tab pages default to `page`,
+ * other screens (mostly forms) stay `narrow`. On a phone every page uses the full screen width.
+ */
+export function Screen({
+  children,
+  scroll = true,
+  bar = true,
+  width,
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  bar?: boolean;
+  width?: keyof typeof CONTENT;
+}) {
   const c = usePalette();
-  const body = <View style={styles.inner}>{children}</View>;
+  const wide = useWide();
+  const inSidebar = useInSidebar();
+  const maxWidth = CONTENT[width ?? (inSidebar ? 'page' : 'narrow')];
+  const body = <View style={[styles.inner, { maxWidth }, wide && styles.innerWide]}>{children}</View>;
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       {bar ? <TopBar /> : <SafeAreaView edges={['top']} />}
@@ -173,7 +191,8 @@ export function Centered({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  inner: { paddingHorizontal: space.l, paddingTop: 18, gap: 18, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  inner: { paddingHorizontal: space.l, paddingTop: 18, gap: 18, width: '100%', alignSelf: 'center' },
+  innerWide: { paddingHorizontal: 32, paddingTop: 32, gap: 22 },
   h1: { fontSize: 30, fontWeight: '800', letterSpacing: -0.3, lineHeight: 33 },
   h2: { fontSize: 21, fontWeight: '700', letterSpacing: -0.2 },
   body: { fontSize: 15, lineHeight: 21 },

@@ -1,18 +1,24 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { ConversationPane } from '@/components/conversation-pane';
 import { Text } from '@/components/text';
 import { Button, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useAnnouncements, useGuideUnread, useMembers } from '@/lib/chat';
 import { useI18n } from '@/lib/i18n';
+import { useWide } from '@/lib/layout';
 import { useMembership } from '@/lib/trip';
 import { deviceTimeZone, deviceToday } from '@/lib/time';
 import type { Announcement } from '@/lib/types';
 import { clockTime, dayLabel } from '@/lib/unread';
 import { radius, space, usePalette } from '@/theme';
 
-/** Guide: one conversation per booking, unread ones first. */
+/**
+ * Guide: one conversation per booking, unread ones first. On a wide window the list stays on the left
+ * and the chosen conversation opens beside it; on a phone a conversation opens as its own screen.
+ */
 export default function Inbox() {
   const c = usePalette();
   const { t, locale } = useI18n();
@@ -36,8 +42,13 @@ export default function Inbox() {
   const recent = announcements.filter((a) => a.send_at <= nowIso).slice(-3).reverse();
   const at = (a: Announcement) => `${dayLabel(a.send_at, realToday, tz, words, locale)} ${clockTime(a.send_at, tz)}`;
 
-  return (
-    <Screen>
+  const wide = useWide();
+  const [chosen, setChosen] = useState<string | null>(null);
+  const openId = chosen ?? rows[0]?.tr.id ?? null;
+  const open = (id: string) => (wide ? setChosen(id) : router.push({ pathname: '/conversation/[id]', params: { id } }));
+
+  const list = (
+    <Screen width={wide ? 'narrow' : undefined}>
       <View style={{ gap: 4 }}>
         <Eyebrow>{t('tabMessages')}</Eyebrow>
         <H1>{t('travellers')}</H1>
@@ -83,8 +94,13 @@ export default function Inbox() {
               key={tr.id}
               accessibilityRole="button"
               accessibilityLabel={`${tr.display_name}${n ? `, ${t('unread', { n })}` : ''}`}
-              onPress={() => router.push({ pathname: '/conversation/[id]', params: { id: tr.id } })}
-              style={({ pressed }) => [styles.row, { backgroundColor: c.card, opacity: pressed ? 0.8 : 1 }]}>
+              accessibilityState={{ selected: wide && tr.id === openId }}
+              onPress={() => open(tr.id)}
+              style={({ pressed }) => [
+                styles.row,
+                { backgroundColor: c.card, opacity: pressed ? 0.8 : 1 },
+                wide && tr.id === openId && { backgroundColor: c.brand },
+              ]}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ color: c.fg, fontWeight: '700', fontSize: 15 }}>
                   {tr.display_name}
@@ -108,9 +124,28 @@ export default function Inbox() {
       </View>
     </Screen>
   );
+
+  if (!wide) return list;
+  return (
+    <View style={[styles.split, { backgroundColor: c.bg }]}>
+      <View style={[styles.listCol, { borderRightColor: c.line }]}>{list}</View>
+      <View style={{ flex: 1 }}>
+        {openId ? (
+          <ConversationPane key={openId} id={openId} />
+        ) : (
+          <View style={styles.emptyPane}>
+            <Muted>{t('noMessages')}</Muted>
+          </View>
+        )}
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
+  split: { flex: 1, flexDirection: 'row' },
+  listCol: { width: '38%', minWidth: 340, maxWidth: 440, borderRightWidth: StyleSheet.hairlineWidth },
+  emptyPane: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', gap: space.m, padding: 14, borderRadius: radius.card, alignItems: 'center' },
   badge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
   badgeText: { color: '#fff', fontSize: 11.5, fontWeight: '800' },

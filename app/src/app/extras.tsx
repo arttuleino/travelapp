@@ -7,6 +7,7 @@ import { money } from '@/lib/cashbook';
 import { summarize } from '@/lib/extras-calc';
 import { useExtras, useSignups } from '@/lib/extras';
 import { useI18n } from '@/lib/i18n';
+import { Grid } from '@/lib/layout';
 import { formatDay } from '@/lib/time';
 import { useMembership } from '@/lib/trip';
 import { space, usePalette } from '@/theme';
@@ -22,7 +23,7 @@ export default function ExtrasScreen() {
       </Screen>
     );
   return (
-    <Screen>
+    <Screen width="page">
       <View style={{ gap: 4 }}>
         <Eyebrow>{t('groupEyebrow')}</Eyebrow>
         <H1>{t('extrasSeg')}</H1>
@@ -44,6 +45,7 @@ function Extras() {
     <View style={{ gap: space.s }}>
       <Button small label={`+ ${t('newExtra')}`} onPress={() => router.push('/extra-edit')} style={{ alignSelf: 'flex-start' }} />
       {!loading && extras.length === 0 ? <Muted>{t('noExtras')}</Muted> : null}
+      <Grid>
       {extras.map((x) => {
         const s = summarize(
           x,
@@ -79,6 +81,7 @@ function Extras() {
           </Pressable>
         );
       })}
+      </Grid>
     </View>
   );
 }

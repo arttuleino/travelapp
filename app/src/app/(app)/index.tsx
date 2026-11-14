@@ -5,6 +5,7 @@ import { Text } from '@/components/text';
 import { Timeline } from '@/components/timeline';
 import { Body, Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { Columns, useWide } from '@/lib/layout';
 import { localTransportFor } from '@/lib/local-transport';
 import { useLatestAnnouncement, useMembership, useProgramme, useTripClock } from '@/lib/trip';
 import { deviceTimeZone, formatDay, formatRange, tripDays } from '@/lib/time';
@@ -25,6 +26,42 @@ export default function Now() {
   const shownDay = phase === 'during' ? clock.date : phase === 'before' ? trip.starts_on : null;
   const shownItems = shownDay ? items.filter((i) => i.day === shownDay) : [];
   const daysToGo = Math.round((Date.parse(trip.starts_on) - Date.parse(clock.date)) / 86_400_000);
+
+  const noticeCard = notice ? (
+    <View style={[styles.notice, { backgroundColor: c.warnBg, borderColor: c.warn }]} accessibilityRole="alert">
+      <Text style={[styles.strong, { color: c.fg }]}>{notice.title}</Text>
+      <Body>{notice.body}</Body>
+      <Muted>
+        {notice.author_name ? `${notice.author_name}, ` : ''}
+        {clockTime(notice.send_at, deviceTimeZone())}
+        {notice.edited_at ? ` · ${t('edited')}` : ''}
+      </Muted>
+    </View>
+  ) : null;
+  const today =
+    phase === 'during' ? (
+      <View style={{ gap: space.m }}>
+        <View style={styles.row}>
+          <Text style={[styles.live, { color: c.live }]}>● {t('nowAt', { day: formatDay(clock.date, locale).toUpperCase(), time: clock.time })}</Text>
+          <Button label={t('wholeWeek')} variant="ghost" small onPress={() => router.navigate('/programme')} />
+        </View>
+        <Timeline items={shownItems} nowTime={clock.time} />
+      </View>
+    ) : phase === 'before' ? (
+      <View style={{ gap: space.m }}>
+        <H2>{daysToGo === 1 ? t('startsTomorrow') : t('daysToGo', { n: daysToGo })}</H2>
+        <Eyebrow>{t('firstDay', { day: formatDay(trip.starts_on, locale) })}</Eyebrow>
+        <Timeline items={shownItems} />
+      </View>
+    ) : (
+      <Card tone="cream">
+        <H2>{t('thanks')}</H2>
+        <Body>{t('tripOver')}</Body>
+      </Card>
+    );
+  const transport = <LocalTransport destination={trip.destination} />;
+  // Phone: notice, today, transport. Computer: today on the left, notice and transport beside it.
+  const wide = useWide();
 
   return (
     <Screen>
@@ -48,40 +85,21 @@ export default function Now() {
         </View>
       </Card>
 
-      {notice ? (
-        <View style={[styles.notice, { backgroundColor: c.warnBg, borderColor: c.warn }]} accessibilityRole="alert">
-          <Text style={[styles.strong, { color: c.fg }]}>{notice.title}</Text>
-          <Body>{notice.body}</Body>
-          <Muted>
-            {notice.author_name ? `${notice.author_name}, ` : ''}
-            {clockTime(notice.send_at, deviceTimeZone())}
-            {notice.edited_at ? ` · ${t('edited')}` : ''}
-          </Muted>
-        </View>
-      ) : null}
-
-      {phase === 'during' ? (
-        <View style={{ gap: space.m }}>
-          <View style={styles.row}>
-            <Text style={[styles.live, { color: c.live }]}>● {t('nowAt', { day: formatDay(clock.date, locale).toUpperCase(), time: clock.time })}</Text>
-            <Button label={t('wholeWeek')} variant="ghost" small onPress={() => router.navigate('/programme')} />
-          </View>
-          <Timeline items={shownItems} nowTime={clock.time} />
-        </View>
-      ) : phase === 'before' ? (
-        <View style={{ gap: space.m }}>
-          <H2>{daysToGo === 1 ? t('startsTomorrow') : t('daysToGo', { n: daysToGo })}</H2>
-          <Eyebrow>{t('firstDay', { day: formatDay(trip.starts_on, locale) })}</Eyebrow>
-          <Timeline items={shownItems} />
-        </View>
+      {wide ? (
+        <Columns weights={[3, 2]}>
+          {today}
+          <>
+            {noticeCard}
+            {transport}
+          </>
+        </Columns>
       ) : (
-        <Card tone="cream">
-          <H2>{t('thanks')}</H2>
-          <Body>{t('tripOver')}</Body>
-        </Card>
+        <>
+          {noticeCard}
+          {today}
+          {transport}
+        </>
       )}
-
-      <LocalTransport destination={trip.destination} />
     </Screen>
   );
 }
