@@ -39,7 +39,7 @@ const PISTES = {
   attribution: 'Rinteet &copy; <a href="https://www.opensnowmap.org">OpenSnowMap</a> (CC-BY-SA)',
 };
 
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 const SERVICES_TTL_MS = 7 * 24 * 3600_000;
 /** Mountain huts show when the whole resort is in view; village services (dozens) from this zoom up. */
 const SERVICES_MIN_ZOOM = 14;
@@ -55,27 +55,35 @@ const SERVICE_STYLE: Record<ServiceKind, { color: string; icon: IconName }> = {
 
 /** Services around the resort, from this browser's cache (a week) or from OpenStreetMap. */
 async function loadServices(map: ResortMap): Promise<Service[]> {
-  const key = `groupglide.services.v1.${map.id}`;
+  const key = `groupglide.services.v2.${map.id}`;
   try {
     const cached = JSON.parse(globalThis.localStorage?.getItem(key) ?? 'null') as { at: number; items: Service[] } | null;
-    if (cached && Date.now() - cached.at < SERVICES_TTL_MS) return cached.items;
+    if (cached?.items?.length && Date.now() - cached.at < SERVICES_TTL_MS) return cached.items;
   } catch {
     // No storage: fetch every time.
   }
-  const body = new URLSearchParams({ data: overpassQuery(bboxAround(map.places)) });
+  const query = overpassQuery(bboxAround(map.places));
   for (const url of OVERPASS) {
+    // A busy server can hold the request for a long time: give up on it after 20 s.
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), 20_000);
     try {
-      const res = await fetch(url, { method: 'POST', body });
-      if (!res.ok) continue;
-      const items = parseServices(await res.json(), map.places);
+      const res = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: query }), signal: abort.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as { elements?: unknown[]; remark?: string };
+      // Overpass reports timeouts and overload as a 200 answer with a remark and no elements.
+      if (!json.elements?.length) throw new Error(json.remark || 'no elements');
+      const items = parseServices(json as Parameters<typeof parseServices>[0], map.places);
       try {
         globalThis.localStorage?.setItem(key, JSON.stringify({ at: Date.now(), items }));
       } catch {
         // Storage full or blocked: fine, just not cached.
       }
       return items;
-    } catch {
-      // Try the next server.
+    } catch (e) {
+      console.warn(`Palvelut: ${url} epäonnistui`, e);
+    } finally {
+      clearTimeout(timer);
     }
   }
   throw new Error('services unavailable');
