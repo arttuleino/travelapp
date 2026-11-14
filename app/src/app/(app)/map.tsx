@@ -146,7 +146,7 @@ export default function MapScreen() {
           <Muted>{t('mapGuideOff')}</Muted>
         )}
       </View>
-      {topGuide ? <Button small variant="ghost" label={t('mapShowGuide')} onPress={() => flyTo(topGuide.l.lat, topGuide.l.lng, 16)} /> : null}
+      {topGuide ? <Tool icon="pin" label={t('mapShowGuide')} onPress={() => flyTo(topGuide.l.lat, topGuide.l.lng, 16)} /> : null}
     </Card>
   ) : null;
 
