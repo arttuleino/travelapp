@@ -7,13 +7,13 @@
  * It covers only the client calls this app makes: auth, from(...).select/insert/update/upsert/delete
  * with eq/order/limit, rpc(...) and realtime channels (emulated by polling for changes).
  *
- * The guide's cash book (cash_books, cash_entries) is not in the demo API. It is kept in this
- * browser instead (see `local`), starting from a sample week, so the Talous tab works on the site
- * without server changes. It is not shared between devices.
+ * The guide's cash book (cash_books, cash_entries) is served by the demo API when it says so
+ * (GET features → cash_book). An older demo API has no cash book: it is then kept in this browser
+ * instead (see `local`), starting from a sample week, and is not shared between devices.
  */
 type User = { id: string; email: string };
 type Session = { access_token: string; token_type: string; user: User };
-type Result<T = unknown> = { data: T | null; error: { message: string } | null; count?: number | null };
+type Result<T = unknown> = { data: T | null; error: { message: string; hint?: string } | null; count?: number | null };
 type AuthListener = (event: string, session: Session | null) => void;
 
 const API = `${process.env.EXPO_PUBLIC_DEMO_API_URL ?? ''}/demo-api`;
@@ -52,9 +52,10 @@ async function call<T>(path: string, body?: unknown): Promise<Result<T>> {
       headers: { 'Content-Type': 'application/json', ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const json = (await res.json().catch(() => ({}))) as { data?: T; error?: string };
+    const json = (await res.json().catch(() => ({}))) as { data?: T; error?: string; hint?: string };
     if (res.status === 401 && session && path !== 'login') setSession(null, 'SIGNED_OUT');
-    if (!res.ok) return { data: null, error: { message: json.error ?? `HTTP ${res.status}` } };
+    // The hint tells the app why a write was refused (e.g. 'has_cash_entries'), as Postgres does.
+    if (!res.ok) return { data: null, error: { message: json.error ?? `HTTP ${res.status}`, ...(json.hint ? { hint: json.hint } : {}) } };
     return { data: json.data ?? null, error: null };
   } catch (e) {
     return { data: null, error: { message: e instanceof Error ? e.message : String(e) } };
@@ -180,19 +181,32 @@ class Query<T = unknown> implements PromiseLike<Result<T>> {
     this.spec.limit = count;
     return this;
   }
+  /** Return the first row as an object instead of a list. */
+  single() {
+    this.one = true;
+    return this;
+  }
+  private one = false;
   then<A = Result<T>, B = never>(
     onFulfilled?: ((result: Result<T>) => A | PromiseLike<A>) | null,
     onRejected?: ((reason: unknown) => B | PromiseLike<B>) | null,
   ): PromiseLike<A | B> {
-    const write = this.spec.op !== 'select';
-    if (LOCAL_TABLES.has(this.spec.table)) return local<T>(this.spec).then(onFulfilled, onRejected);
-    return call<T>('query', this.spec)
-      .then((result) => {
+    const spec = this.spec;
+    const write = spec.op !== 'select';
+    const one = this.one;
+    const first = (result: Result<T>): Result<T> => {
+      if (!one || result.error) return result;
+      const row = Array.isArray(result.data) ? result.data[0] : result.data;
+      return row ? { ...result, data: row as T } : { data: null, error: { message: 'no rows' } };
+    };
+    const remote = () =>
+      call<T>('query', spec).then((result) => {
         if (write) void poll(); // show our own change without waiting for the next poll
         // Writes return the affected rows; their number stands in for Supabase's `count`.
         return write ? { ...result, count: Array.isArray(result.data) ? result.data.length : 0 } : result;
-      })
-      .then(onFulfilled, onRejected);
+      });
+    const run = LOCAL_TABLES.has(spec.table) ? serverHasCashBook().then((yes) => (yes ? remote() : local<T>(spec))) : remote();
+    return run.then(first).then(onFulfilled, onRejected);
   }
 }
 
@@ -200,6 +214,18 @@ class Query<T = unknown> implements PromiseLike<Result<T>> {
 
 type Row = Record<string, unknown>;
 const LOCAL_TABLES = new Set(['cash_books', 'cash_entries']);
+
+let cashBookFeature: Promise<boolean> | null = null;
+
+/** Whether the demo API keeps the cash book itself (newer servers answer GET features). */
+function serverHasCashBook(): Promise<boolean> {
+  cashBookFeature ??= call<{ cash_book?: boolean }>('features').then((r) => {
+    // Ask again next time unless the server answered (an older server answers "Not found").
+    if (r.error && r.error.message !== 'Not found') cashBookFeature = null;
+    return r.data?.cash_book === true;
+  });
+  return cashBookFeature;
+}
 const LOCAL_KEY = 'ski-assist-demo-local';
 let store: Record<string, Row[]> | null = null;
 

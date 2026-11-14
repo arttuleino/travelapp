@@ -13,7 +13,6 @@ import { useExtras, useSignups } from '@/lib/extras';
 import { signOut, useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useMembership } from '@/lib/trip';
-import { DEMO_MODE } from '@/lib/supabase';
 import { space, usePalette } from '@/theme';
 
 /** Profile: who is signed in, the app language and signing out. */
@@ -37,7 +36,7 @@ export default function Profile() {
         <Muted>{trip.name}</Muted>
       </View>
 
-      {role === 'guide' && !DEMO_MODE ? <GuideLinks /> : null}
+      {role === 'guide' ? <GuideLinks /> : null}
       {role === 'traveller' ? <CustomerService market={market} /> : null}
 
       <View style={{ gap: space.s }}>
