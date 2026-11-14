@@ -5,10 +5,11 @@ import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 
-import { iconSvg } from '@/components/icon';
+import { iconSvg, type IconName } from '@/components/icon';
 import type { LiveMapProps } from '@/components/live-map-types';
 import { KIND_STYLE } from '@/components/ski-map';
-import type { Place } from '@/lib/resort-map';
+import { bboxAround, overpassQuery, parseServices, type Service, type ServiceKind } from '@/lib/osm-services';
+import type { Place, ResortMap } from '@/lib/resort-map';
 
 /**
  * Browser: a real map (OpenStreetMap data) with the OpenSnowMap piste and lift layer on top,
@@ -38,6 +39,48 @@ const PISTES = {
   attribution: 'Rinteet &copy; <a href="https://www.opensnowmap.org">OpenSnowMap</a> (CC-BY-SA)',
 };
 
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const SERVICES_TTL_MS = 7 * 24 * 3600_000;
+/** Mountain huts show when the whole resort is in view; village services (dozens) from this zoom up. */
+const SERVICES_MIN_ZOOM = 14;
+const SERVICE_STYLE: Record<ServiceKind, { color: string; icon: IconName }> = {
+  hut: { color: '#D9661A', icon: 'food' },
+  food: { color: '#8A6A3B', icon: 'food' },
+  rental: { color: '#7B4FD0', icon: 'ski' },
+  school: { color: '#2F6FDE', icon: 'users' },
+  health: { color: '#C62828', icon: 'plus' },
+  atm: { color: '#1F7A3E', icon: 'euro' },
+  bus: { color: '#1F8A7A', icon: 'bus' },
+};
+
+/** Services around the resort, from this browser's cache (a week) or from OpenStreetMap. */
+async function loadServices(map: ResortMap): Promise<Service[]> {
+  const key = `groupglide.services.v1.${map.id}`;
+  try {
+    const cached = JSON.parse(globalThis.localStorage?.getItem(key) ?? 'null') as { at: number; items: Service[] } | null;
+    if (cached && Date.now() - cached.at < SERVICES_TTL_MS) return cached.items;
+  } catch {
+    // No storage: fetch every time.
+  }
+  const body = new URLSearchParams({ data: overpassQuery(bboxAround(map.places)) });
+  for (const url of OVERPASS) {
+    try {
+      const res = await fetch(url, { method: 'POST', body });
+      if (!res.ok) continue;
+      const items = parseServices(await res.json(), map.places);
+      try {
+        globalThis.localStorage?.setItem(key, JSON.stringify({ at: Date.now(), items }));
+      } catch {
+        // Storage full or blocked: fine, just not cached.
+      }
+      return items;
+    } catch {
+      // Try the next server.
+    }
+  }
+  throw new Error('services unavailable');
+}
+
 const CSS = `
 .gg-pin{display:flex;align-items:center;justify-content:center;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);box-sizing:border-box;cursor:pointer;transition:transform .15s}
 .gg-pin.sel{border-width:3px;transform:scale(1.18)}
@@ -50,6 +93,10 @@ const CSS = `
 .gg-guide.old .dot{background:#E4E1D6;border-color:#8A877C;color:#5C5A52}
 .gg-guide.live:before{content:"";position:absolute;inset:-6px;border-radius:999px;background:rgba(255,214,0,.45);animation:gg-pulse 2s ease-out infinite}
 @keyframes gg-pulse{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.4);opacity:0}}
+.gg-svc{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;background:#fff;border:2px solid;box-shadow:0 1px 3px rgba(0,0,0,.3);box-sizing:border-box;cursor:pointer}
+.gg-pop{font:14px Figtree,system-ui,sans-serif;line-height:1.4}
+.gg-pop b{font-size:15px}
+.gg-pop a{font-weight:700;color:#16160F}
 .gg-me{width:18px;height:18px;border-radius:999px;background:#2F6FDE;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,111,222,.35),0 1px 4px rgba(0,0,0,.4);box-sizing:border-box}
 .leaflet-container{font-family:Figtree,system-ui,sans-serif;background:#EEF1EC}
 .leaflet-control-attribution{font-size:10px}
@@ -68,15 +115,19 @@ const bounds = (places: Place[]) => L.latLngBounds(places.map((p) => [p.lat, p.l
 
 export function LiveMap(props: LiveMapProps) {
   const { map, height, selectedId, next, nameOf, labelOf, onSelect, guides, me, focus, fitKey, base, pistes, wheelZoom } = props;
+  const { services, serviceLabel, openMapsLabel, onServicesFailed, busTimetable } = props;
   const box = useRef<HTMLElement | null>(null);
   const lmap = useRef<L.Map | null>(null);
   const baseLayer = useRef<L.TileLayer | null>(null);
   const pisteLayer = useRef<L.TileLayer | null>(null);
   const markers = useRef<L.LayerGroup | null>(null);
+  const svcLayer = useRef<L.LayerGroup | null>(null);
   const onSelectRef = useRef(onSelect);
+  const svcText = useRef({ serviceLabel, openMapsLabel, onServicesFailed, busTimetable });
   useEffect(() => {
     onSelectRef.current = onSelect;
-  }, [onSelect]);
+    svcText.current = { serviceLabel, openMapsLabel, onServicesFailed, busTimetable };
+  }, [onSelect, serviceLabel, openMapsLabel, onServicesFailed, busTimetable]);
 
   // Create the map once.
   useEffect(() => {
@@ -86,6 +137,7 @@ export function LiveMap(props: LiveMapProps) {
     const m = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false, tap: true } as L.MapOptions);
     m.attributionControl.setPrefix(false);
     m.fitBounds(bounds(map.places), { padding: [36, 36], maxZoom: 15 });
+    svcLayer.current = L.layerGroup();
     markers.current = L.layerGroup().addTo(m);
     lmap.current = m;
     // The box can change size (window resize, columns); keep the tiles filling it.
@@ -132,6 +184,60 @@ export function LiveMap(props: LiveMapProps) {
       pisteLayer.current = L.tileLayer(PISTES.url, { attribution: PISTES.attribution, maxNativeZoom: 18, maxZoom: 19, opacity: 0.95 }).addTo(m);
     }
   }, [pistes, map]);
+
+  // Other services: fetched once per resort, shown when switched on and zoomed in far enough.
+  useEffect(() => {
+    const m = lmap.current;
+    const layer = svcLayer.current;
+    if (!m || !layer) return;
+    if (!services) {
+      layer.remove();
+      return;
+    }
+    let cancelled = false;
+    const huts = L.layerGroup().addTo(m);
+    const sync = () => {
+      if (m.getZoom() >= SERVICES_MIN_ZOOM) layer.addTo(m);
+      else layer.remove();
+    };
+    loadServices(map)
+      .then((items) => {
+        if (cancelled) return;
+        const { serviceLabel, openMapsLabel, onServicesFailed, busTimetable } = svcText.current;
+        onServicesFailed?.(false);
+        layer.clearLayers();
+        for (const sv of items) {
+          const st = SERVICE_STYLE[sv.kind];
+          const icon = L.divIcon({
+            className: '',
+            html: `<div class="gg-svc" style="border-color:${st.color}">${iconSvg(st.icon, 12, st.color, 2.4)}</div>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+          });
+          // Google Maps finds the place by name in the resort; for a bus stop it shows the departures.
+          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${sv.name}, ${map.names[0]}`)}`;
+          const link = (href: string, text: string) => `<br><a href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`;
+          const mk = L.marker([sv.lat, sv.lng], { icon, title: `${sv.name}, ${serviceLabel(sv.kind)}`, keyboard: true });
+          mk.bindTooltip(esc(sv.name), { direction: 'top', offset: [0, -10], className: 'gg-tag' });
+          mk.bindPopup(
+            `<div class="gg-pop"><b>${esc(sv.name)}</b><br>${esc(serviceLabel(sv.kind))}${link(url, openMapsLabel)}${
+              sv.kind === 'bus' && busTimetable ? link(busTimetable.url, busTimetable.label) : ''
+            }</div>`,
+          );
+          (sv.kind === 'hut' ? huts : layer).addLayer(mk);
+        }
+        sync();
+      })
+      .catch(() => {
+        if (!cancelled) svcText.current.onServicesFailed?.(true);
+      });
+    m.on('zoomend', sync);
+    return () => {
+      cancelled = true;
+      m.off('zoomend', sync);
+      huts.remove();
+    };
+  }, [services, map]);
 
   // Pins, guide and "me". Few markers, so they are simply redrawn when anything changes.
   useEffect(() => {
