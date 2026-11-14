@@ -1,6 +1,7 @@
-// Drawn resort maps for the Map tab: where the hotel, lifts, rental shop, lunch spot and ski bus
-// stops are, and which programme items happen at each place. A demo for now: one resort,
-// hand-placed on a panorama (not to scale). Later the operator would enter places per destination.
+// Resort places for the Map tab: where the hotel, lifts, rental shop, lunch spot and ski bus
+// stops are, and which programme items happen at each place. Each place has real coordinates
+// (shown on an OpenStreetMap map with the piste layer in the browser) and a spot on the drawn
+// panorama (used by the phone app). One resort for now; later the operator enters places per destination.
 // Free of app imports so it can be unit tested with node.
 
 export type PlaceKind = 'hotel' | 'lift' | 'rental' | 'food' | 'bus';
@@ -10,7 +11,10 @@ export type Place = {
   kind: PlaceKind;
   /** Shown name. The hotel's comes from the trip (trips.hotel_name) instead. */
   name: string;
-  /** Pin position on the map drawing, in the map's own units (see ResortMap.width/height). */
+  /** Real position (WGS84). */
+  lat: number;
+  lng: number;
+  /** Pin position on the drawn panorama, in the drawing's own units (see ResortMap.width/height). */
   x: number;
   y: number;
   /** Lowercase, accent-free words that link programme items to this place (e.g. "zwolferkogel"). */
@@ -27,6 +31,8 @@ export type ResortMap = {
   names: string[];
   width: number;
   height: number;
+  /** The resort's own piste map (the official lift and piste map). */
+  pisteMapUrl?: string;
   /** Order matters: the first place whose keyword appears in a programme item wins, so the hotel is last. */
   places: Place[];
 };
@@ -43,11 +49,14 @@ const SAALBACH: ResortMap = {
   names: ['saalbach', 'hinterglemm'],
   width: 1000,
   height: 640,
+  pisteMapUrl: 'https://www.skiresort.info/ski-resort/saalbach-hinterglemm-leogang-fieberbrunn-skicircus/trail-map/',
   places: [
     {
       id: 'zwolferkogelbahn',
       kind: 'lift',
       name: 'Zwölferkogelbahn',
+      lat: 47.375521,
+      lng: 12.589408,
       x: 745,
       y: 528,
       keywords: ['zwolferkogel'],
@@ -63,6 +72,8 @@ const SAALBACH: ResortMap = {
       id: 'schattberg',
       kind: 'lift',
       name: 'Schattberg X-press',
+      lat: 47.390317,
+      lng: 12.635144,
       x: 290,
       y: 528,
       keywords: ['schattberg'],
@@ -78,6 +89,8 @@ const SAALBACH: ResortMap = {
       id: 'kohlmaisbahn',
       kind: 'lift',
       name: 'Kohlmaisbahn',
+      lat: 47.391841,
+      lng: 12.64014,
       x: 135,
       y: 522,
       keywords: ['kohlmais'],
@@ -93,6 +106,8 @@ const SAALBACH: ResortMap = {
       id: 'rosswald',
       kind: 'food',
       name: 'Rosswaldhütte',
+      lat: 47.389387,
+      lng: 12.56862,
       x: 660,
       y: 330,
       keywords: ['rosswald'],
@@ -103,6 +118,8 @@ const SAALBACH: ResortMap = {
       id: 'brundl',
       kind: 'rental',
       name: 'Intersport Bründl',
+      lat: 47.391548,
+      lng: 12.638997,
       x: 246,
       y: 600,
       keywords: ['brundl', 'intersport'],
@@ -112,12 +129,14 @@ const SAALBACH: ResortMap = {
         sv: 'Uthyrning av skidor och pjäxor.',
         no: 'Utleie av ski og skistøvler.',
       },
-      query: 'Intersport Bründl Saalbach',
+      query: 'Bründl Sports Kohlmaisbahn Saalbach',
     },
     {
       id: 'skibus-hinterglemm',
       kind: 'bus',
       name: 'Skibus Hinterglemm',
+      lat: 47.37625,
+      lng: 12.59075,
       x: 820,
       y: 580,
       keywords: ['skibus hinterglemm', 'skibussi hinterglemm'],
@@ -128,6 +147,8 @@ const SAALBACH: ResortMap = {
       id: 'skibus-saalbach',
       kind: 'bus',
       name: 'Skibus Saalbach',
+      lat: 47.38975,
+      lng: 12.63625,
       x: 370,
       y: 584,
       keywords: ['skibus', 'ski bus'],
@@ -138,6 +159,8 @@ const SAALBACH: ResortMap = {
       id: 'hotel',
       kind: 'hotel',
       name: '',
+      lat: 47.38885,
+      lng: 12.63185,
       x: 190,
       y: 566,
       keywords: ['hotel', 'aula', 'lobby'],

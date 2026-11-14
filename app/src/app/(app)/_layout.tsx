@@ -6,6 +6,7 @@ import { TabBar } from '@/components/tab-bar';
 import { Body, Button, Centered, H2, Muted } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
 import { useGuideUnread, useTravellerUnread } from '@/lib/chat';
+import { GuideSharingProvider } from '@/lib/guide-sharing';
 import { useI18n } from '@/lib/i18n';
 import { SidebarContext, useWide } from '@/lib/layout';
 import { listenForNotificationTaps, registerForPush } from '@/lib/push';
@@ -65,6 +66,7 @@ function TripTabs() {
   // A wide window (computer) gets the navigation as a sidebar on the left instead of tabs at the bottom.
   const wide = useWide();
   return (
+    <GuideSharingProvider enabled={guide} memberId={conversationId} tripId={trip.id}>
     <SidebarContext.Provider value={wide}>
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, tabBarPosition: wide ? 'left' : 'bottom' }}>
       <Tabs.Screen name="index" options={{ title: t('tabNow') }} />
@@ -79,5 +81,6 @@ function TripTabs() {
       <Tabs.Screen name="profile" options={{ title: t('tabProfile'), href: guide ? undefined : null }} />
     </Tabs>
     </SidebarContext.Provider>
+    </GuideSharingProvider>
   );
 }
