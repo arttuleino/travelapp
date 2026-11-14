@@ -110,3 +110,46 @@ test('statementHtml escapes guide text', () => {
   assert.ok(!html.includes('<b>Taxi'));
   assert.ok(html.includes('<td class="n">-1.00</td>'));
 });
+
+test('reconcile: missing receipts, extras, transfers and cash to count', async () => {
+  const { reconcile } = await import('./cashbook.ts');
+  const list = [
+    e({ voucher_no: 1, kind: 'cost_other', account: 'cash', amount: -20, comment: 'Taksi' }),
+    e({ voucher_no: 2, kind: 'cost_arrangement', account: 'cash', amount: -100, receipt: true, programme_item_id: 'fondue' }),
+    e({ voucher_no: 3, kind: 'transfer', account: 'bank', amount: -200, transfer_id: 'x' }),
+    e({ voucher_no: 4, kind: 'transfer', account: 'cash', amount: 200, transfer_id: 'x' }),
+    e({ voucher_no: 5, kind: 'income_arrangement', account: 'mobile', amount: 90, programme_item_id: 'fondue' }),
+  ];
+  const extras = [
+    {
+      id: 'f',
+      title: 'Fondue',
+      price: 45,
+      programme_item_id: 'fondue',
+      signups: [
+        { persons: 2, status: 'paid' as const, amount_paid: 90 },
+        { persons: 1, status: 'unpaid' as const, amount_paid: null },
+        { persons: 4, status: 'prepaid' as const, amount_paid: null },
+      ],
+    },
+    { id: 's', title: 'Kelkka', price: 30, programme_item_id: 'sledge', signups: [{ persons: 1, status: 'paid' as const, amount_paid: 30 }] },
+  ];
+  const checks = reconcile({ opening_bank: 0, opening_cash: 50, opening_mobile: 0 }, list, extras);
+  const codes = checks.map((c) => c.code);
+  assert.deepEqual(codes, ['missingReceipts', 'extraUnpaid', 'extraMismatch', 'negativeBalance', 'transfersOk', 'countCash']);
+  assert.equal(checks[0].code === 'missingReceipts' && checks[0].examples[0].comment, 'Taksi');
+  assert.equal(checks.at(-1)?.code === 'countCash' && checks.at(-1)?.amount, 130);
+});
+
+test('reconcile: an unmatched transfer half is flagged', async () => {
+  const { reconcile } = await import('./cashbook.ts');
+  const checks = reconcile(null, [e({ voucher_no: 7, kind: 'transfer', account: 'bank', amount: -50, transfer_id: 'y' })]);
+  assert.equal(checks[0].code, 'transfersOff');
+});
+
+test('changedSinceSent compares creation times with the send time', async () => {
+  const { changedSinceSent } = await import('./cashbook.ts');
+  assert.equal(changedSinceSent(null, [{ created_at: '2027-02-15T10:00:00Z' }]), false);
+  assert.equal(changedSinceSent('2027-02-15T09:00:00Z', [{ created_at: '2027-02-15T10:00:00Z' }]), true);
+  assert.equal(changedSinceSent('2027-02-15T11:00:00Z', [{ created_at: '2027-02-15T10:00:00Z' }]), false);
+});

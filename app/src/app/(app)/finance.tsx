@@ -1,24 +1,30 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, Share, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { Text } from '@/components/text';
 import { Body, Button, Card, Chip, Eyebrow, H1, Muted, Screen } from '@/components/ui';
 import {
   ACCOUNTS,
   arrangementSummaries,
   balances,
+  changedSinceSent,
   isCost,
   isIncome,
   money,
   newestFirst,
+  reconcile,
   reportCsv,
   statement,
   statementHtml,
   type Account,
   type CashEntry,
+  type ReconCheck,
+  type ReconExtra,
 } from '@/lib/cashbook';
-import { accountLabel, kindLabel, reportLabels, sharePdf, useCashBook, useCashEntries } from '@/lib/finance';
+import { useExtras, useSignups } from '@/lib/extras';
+import { accountLabel, kindLabel, markReportSent, reportLabels, shareCsv, sharePdf, useCashBook, useCashEntries } from '@/lib/finance';
 import { useI18n } from '@/lib/i18n';
 import { clockTime } from '@/lib/unread';
 import { deviceTimeZone, deviceToday, formatDay, formatRange, tripDays, weekdayShort } from '@/lib/time';
@@ -131,7 +137,13 @@ function EntryList({ entries, arrangementName }: { entries: CashEntry[]; arrange
       {list.length === 0 ? <Muted>{t('noEntries')}</Muted> : null}
       {list.map((e) => {
         const amount = Number(e.amount);
-        const detail = [kindLabel(t, e.kind), accountLabel(t, e.account), formatDay(e.entry_date, locale), arrangementName(e.programme_item_id, true)]
+        const detail = [
+          kindLabel(t, e.kind),
+          accountLabel(t, e.account),
+          formatDay(e.entry_date, locale),
+          arrangementName(e.programme_item_id, true),
+          isCost(e.kind) && !e.receipt ? t('noReceipt') : '',
+        ]
           .filter(Boolean)
           .join(' · ');
         return (
@@ -220,10 +232,23 @@ function Report({ entries, arrangementName }: { entries: CashEntry[]; arrangemen
     [t('period'), formatRange(trip.starts_on, trip.ends_on, locale)],
   ];
 
-  function share() {
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const sentAt = book?.report_sent_at ?? null;
+  const changed = changedSinceSent(sentAt, entries);
+
+  async function send() {
+    setSending(true);
+    setSendError(null);
     const csv = reportCsv(book, entries, reportLabels(t, arrangementName));
-    const title = `${t('financeEyebrow')} ${trip.destination} ${trip.starts_on}`;
-    Share.share({ title, message: csv }).catch(() => {});
+    const slug = trip.destination.normalize('NFD').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'trip';
+    try {
+      await shareCsv(csv, `${t('financeEyebrow')}-${slug}-${trip.starts_on}.csv`, t('sendReport'));
+      await markReportSent(trip.id);
+    } catch {
+      setSendError(t('sendReportFailed'));
+    }
+    setSending(false);
   }
 
   const cell = { flex: 1, textAlign: 'right' as const, color: c.fg, fontVariant: ['tabular-nums' as const], fontSize: 13 };
@@ -255,12 +280,100 @@ function Report({ entries, arrangementName }: { entries: CashEntry[]; arrangemen
         ))}
       </Card>
 
+      <Reconciliation entries={entries} />
+
+      <Card style={{ gap: space.s }}>
+        <Body style={{ fontWeight: '700' }}>{t('sendReportSection')}</Body>
+        <Muted>
+          {sentAt
+            ? t(changed ? 'reportSentChanged' : 'reportSentAt', {
+                date: formatDay(sentAt.slice(0, 10), locale),
+                time: clockTime(sentAt, deviceTimeZone()),
+              })
+            : t('reportNotSent')}
+        </Muted>
+        {sendError ? <Text style={{ color: c.live }}>{sendError}</Text> : null}
+        <Button label={sentAt && !changed ? t('sendReportAgain') : t('sendReport')} onPress={send} busy={sending} disabled={entries.length === 0} />
+      </Card>
+
       <StatementPicker entries={entries} arrangementName={arrangementName} />
 
-      <Button label={t('shareReport')} variant="ghost" onPress={share} disabled={entries.length === 0} />
       <Button label={t('editCashBook')} variant="ghost" onPress={() => router.push('/finance-settings')} />
       <Muted>{t('reportHint')}</Muted>
     </View>
+  );
+}
+
+/** Checks before the report goes to the office: receipts, paid extras, transfers, cash to count. */
+function Reconciliation({ entries }: { entries: CashEntry[] }) {
+  const c = usePalette();
+  const { t, locale } = useI18n();
+  const { trip } = useMembership();
+  const { book } = useCashBook(trip.id);
+  const { extras } = useExtras(trip.id);
+  const signups = useSignups(trip.id);
+  const eur = (n: number) => `${money(n, locale)} €`;
+
+  const reconExtras: ReconExtra[] = extras.map((x) => ({
+    id: x.id,
+    title: x.title,
+    price: x.price,
+    programme_item_id: x.programme_item_id,
+    signups: signups.filter((s) => s.extra_id === x.id),
+  }));
+  const checks = reconcile(book, entries, reconExtras);
+
+  const text = (k: ReconCheck): [string, string] => {
+    switch (k.code) {
+      case 'missingReceipts':
+        return [
+          t('reconMissingReceipts', { n: k.count }),
+          k.examples.map((e) => `${t('voucher', { n: e.voucher })} ${e.comment} ${money(e.amount, locale)} €`.replace(/\s+/g, ' ')).join(', ') +
+            (k.count > k.examples.length ? ` ${t('reconAndMore')}` : ''),
+        ];
+      case 'receiptsOk':
+        return [t('reconReceiptsOk'), t('reconReceiptsOkDetail', { n: k.count })];
+      case 'extraUnpaid':
+        return [t('reconExtraUnpaid', { title: k.title, n: k.bookings }), t('reconExtraUnpaidDetail', { persons: k.persons, sum: eur(k.outstanding) })];
+      case 'extraMismatch':
+        return [t('reconExtraMismatch', { title: k.title }), t('reconExtraMismatchDetail', { collected: eur(k.collected), booked: eur(k.booked) })];
+      case 'extraOk':
+        return [t('reconExtraOk', { title: k.title }), t('reconExtraOkDetail', { persons: k.persons, sum: eur(k.collected), prepaid: k.prepaid })];
+      case 'transfersOff':
+        return [t('reconTransfersOff'), t('reconTransfersOffDetail', { sum: eur(k.sum), vouchers: k.vouchers.join(', ') })];
+      case 'transfersOk':
+        return [t('reconTransfersOk'), t('reconTransfersOkDetail', { n: k.count })];
+      case 'negativeBalance':
+        return [t('reconNegative', { account: accountLabel(t, k.account) }), t('reconNegativeDetail', { sum: eur(k.amount) })];
+      case 'countCash':
+        return [t('reconCountCash', { sum: eur(k.amount) }), t('reconCountCashDetail')];
+    }
+  };
+  const warnings = checks.filter((k) => k.level === 'warn').length;
+
+  return (
+    <Card style={{ gap: space.m }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: space.m }}>
+        <Body style={{ fontWeight: '700' }}>{t('reconTitle')}</Body>
+        <Muted>{warnings ? t('reconWarnings', { n: warnings }) : t('reconAllOk')}</Muted>
+      </View>
+      <Muted>{t('reconHint')}</Muted>
+      {checks.map((k, i) => {
+        const [title, detail] = text(k);
+        const color = k.level === 'warn' ? c.live : k.level === 'ok' ? c.ok : c.muted;
+        return (
+          <View key={`${k.code}-${i}`} style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-start' }}>
+            <View style={{ paddingTop: 1 }}>
+              <Icon name={k.level === 'warn' ? 'alert' : k.level === 'ok' ? 'check' : 'euro'} size={18} color={color} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Body style={{ fontWeight: '700' }}>{title}</Body>
+              {detail ? <Muted>{detail}</Muted> : null}
+            </View>
+          </View>
+        );
+      })}
+    </Card>
   );
 }
 

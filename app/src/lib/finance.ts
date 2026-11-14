@@ -38,6 +38,8 @@ export type EntryInput = {
   entry_date: string;
   comment: string;
   programme_item_id: string | null;
+  /** Costs only: the guide has the receipt. */
+  receipt: boolean;
 };
 export type TransferInput = { from: EntryAccount; to: EntryAccount; amount: number; entry_date: string; comment: string };
 
@@ -45,7 +47,7 @@ const signed = (kind: EntryKind, amount: number) => (kind.startsWith('cost') ? -
 
 /** Records a cost or income (new), or changes one (`id`). The database numbers the voucher. */
 export async function saveEntry(tripId: string, input: EntryInput, id?: string) {
-  const row = { ...input, amount: signed(input.kind, input.amount), comment: input.comment.trim() };
+  const row = { ...input, amount: signed(input.kind, input.amount), comment: input.comment.trim(), receipt: input.kind.startsWith('cost') && input.receipt };
   const { error } = id
     ? await supabase.from('cash_entries').update(row).eq('id', id)
     : await supabase.from('cash_entries').insert({ trip_id: tripId, ...row });
@@ -70,6 +72,44 @@ export async function saveTransfer(tripId: string, input: TransferInput, transfe
   if (a.error) throw a.error;
   const b = await supabase.from('cash_entries').update(into).eq('transfer_id', transferId).gt('amount', 0);
   if (b.error) throw b.error;
+}
+
+/** Ticks or unticks "receipt kept" on a cost straight from the checks. */
+export async function setReceipt(id: string, receipt: boolean) {
+  const { error } = await supabase.from('cash_entries').update({ receipt }).eq('id', id);
+  if (error) throw error;
+}
+
+/** Records that the weekly report was sent to the office now. */
+export async function markReportSent(tripId: string) {
+  const { error } = await supabase
+    .from('cash_books')
+    .upsert({ trip_id: tripId, report_sent_at: new Date().toISOString() }, { onConflict: 'trip_id' });
+  if (error) throw error;
+}
+
+/**
+ * Hands the weekly report CSV to the guide: the share sheet on a phone (mail, WhatsApp, Files),
+ * a download in the browser.
+ */
+export async function shareCsv(csv: string, fileName: string, dialogTitle: string) {
+  // A byte order mark makes Excel read the file as UTF-8 (ä, ö).
+  const text = `\uFEFF${csv}`;
+  if (Platform.OS === 'web') {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return;
+  }
+  if (!FileSystem.cacheDirectory) throw new Error('no cache directory');
+  const target = `${FileSystem.cacheDirectory}${fileName}`;
+  await FileSystem.writeAsStringAsync(target, text);
+  await Sharing.shareAsync(target, { mimeType: 'text/csv', UTI: 'public.comma-separated-values-text', dialogTitle });
 }
 
 /** Deletes an entry; for a transfer, both halves. */

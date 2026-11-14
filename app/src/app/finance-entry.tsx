@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, Switch, View } from 'react-native';
 
 import { Text } from '@/components/text';
 import { Body, Button, Chip, Field, H2, Muted, Screen } from '@/components/ui';
-import { KINDS, accountsFor, parseAmount, takesArrangement, type CashEntry, type EntryAccount, type EntryKind } from '@/lib/cashbook';
+import { KINDS, accountsFor, isCost, parseAmount, takesArrangement, type CashEntry, type EntryAccount, type EntryKind } from '@/lib/cashbook';
 import { accountLabel, deleteEntry, kindLabel, saveEntry, saveTransfer, useCashEntries } from '@/lib/finance';
 import { useI18n } from '@/lib/i18n';
 import { formatDay, tripDays, weekdayShort } from '@/lib/time';
@@ -55,6 +55,7 @@ function EntryForm({ existing, pair }: { existing: CashEntry | null; pair: CashE
   const [to, setTo] = useState<EntryAccount>(into?.account ?? 'cash');
   const [itemId, setItemId] = useState<string | null>(existing?.programme_item_id ?? null);
   const [comment, setComment] = useState(existing?.comment ?? '');
+  const [receipt, setReceipt] = useState(Boolean(existing?.receipt));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -81,7 +82,7 @@ function EntryForm({ existing, pair }: { existing: CashEntry | null; pair: CashE
       else
         await saveEntry(
           trip.id,
-          { kind: kind as Exclude<EntryKind, 'transfer'>, account: pickedAccount, amount: sum, entry_date: day, comment, programme_item_id: pickedItem },
+          { kind: kind as Exclude<EntryKind, 'transfer'>, account: pickedAccount, amount: sum, entry_date: day, comment, programme_item_id: pickedItem, receipt },
           existing?.id,
         );
       router.back();
@@ -162,6 +163,16 @@ function EntryForm({ existing, pair }: { existing: CashEntry | null; pair: CashE
       ) : null}
 
       <Field label={t('comment')} value={comment} onChangeText={setComment} placeholder={t('commentPlaceholder')} maxLength={120} />
+
+      {isCost(kind) ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Body style={{ fontWeight: '700' }}>{t('receiptKept')}</Body>
+            <Muted>{t('receiptHint')}</Muted>
+          </View>
+          <Switch value={receipt} onValueChange={setReceipt} trackColor={{ true: c.ok, false: c.pillOff }} accessibilityLabel={t('receiptKept')} />
+        </View>
+      ) : null}
 
       {error ? <Text style={{ color: c.live }}>{error}</Text> : null}
       <Button label={existing ? t('save') : t('saveEntry')} onPress={save} busy={busy} />
