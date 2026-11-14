@@ -17,6 +17,8 @@ export type CashBook = {
   opening_bank: number;
   opening_cash: number;
   opening_mobile: number;
+  /** When the guide last sent the weekly report to the office. Missing on databases before it. */
+  report_sent_at?: string | null;
 };
 
 export type CashEntry = {
@@ -30,6 +32,8 @@ export type CashEntry = {
   comment: string;
   programme_item_id: string | null;
   transfer_id: string | null;
+  /** The guide has the receipt for this cost (kept for the office). Missing on databases before receipts. */
+  receipt?: boolean | null;
   created_at: string;
 };
 
@@ -241,4 +245,98 @@ ${
 }
 <p class="foot">${esc(w.generated)}</p>
 </body></html>`;
+}
+
+// ---- Reconciliation: checks before the weekly report goes to the office ----
+
+/** The parts of a paid extra the checks need (see extras-calc.ts). */
+export type ReconExtra = {
+  id: string;
+  title: string;
+  price: number;
+  programme_item_id: string | null;
+  signups: { persons: number; status: 'unpaid' | 'prepaid' | 'paid'; amount_paid: number | null }[];
+};
+
+export type ReconCheck =
+  | { level: 'warn'; code: 'missingReceipts'; count: number; examples: { comment: string; amount: number; voucher: number }[] }
+  | { level: 'ok'; code: 'receiptsOk'; count: number }
+  | { level: 'warn'; code: 'extraUnpaid'; title: string; bookings: number; persons: number; outstanding: number }
+  | { level: 'warn'; code: 'extraMismatch'; title: string; collected: number; booked: number }
+  | { level: 'ok'; code: 'extraOk'; title: string; persons: number; collected: number; prepaid: number }
+  | { level: 'warn'; code: 'transfersOff'; sum: number; vouchers: number[] }
+  | { level: 'ok'; code: 'transfersOk'; count: number }
+  | { level: 'warn'; code: 'negativeBalance'; account: Account; amount: number }
+  | { level: 'info'; code: 'countCash'; amount: number };
+
+/**
+ * Compares the cash book with what it should agree with, warnings first:
+ * costs without a receipt, paid extras against the income booked for them,
+ * transfers whose halves don't cancel out, and negative balances.
+ * Ends with how much cash the guide should be able to count.
+ */
+export function reconcile(book: Pick<CashBook, 'opening_bank' | 'opening_cash' | 'opening_mobile'> | null, entries: CashEntry[], extras: ReconExtra[] = []): ReconCheck[] {
+  const out: ReconCheck[] = [];
+  const costs = entries.filter((e) => isCost(e.kind));
+  const noReceipt = costs.filter((e) => !e.receipt).sort((a, b) => a.voucher_no - b.voucher_no);
+  if (noReceipt.length) {
+    out.push({
+      level: 'warn',
+      code: 'missingReceipts',
+      count: noReceipt.length,
+      examples: noReceipt.slice(0, 3).map((e) => ({ comment: e.comment, amount: num(e.amount), voucher: e.voucher_no })),
+    });
+  } else if (costs.length) out.push({ level: 'ok', code: 'receiptsOk', count: costs.length });
+
+  for (const x of extras) {
+    if (!x.signups.length) continue;
+    let persons = 0;
+    let unpaid = 0;
+    let unpaidPersons = 0;
+    let outstanding = 0;
+    let collected = 0;
+    let prepaid = 0;
+    for (const s of x.signups) {
+      const due = cents(num(x.price) * s.persons);
+      persons += s.persons;
+      if (s.status === 'unpaid') {
+        unpaid += 1;
+        unpaidPersons += s.persons;
+        outstanding = cents(outstanding + due);
+      } else if (s.status === 'prepaid') prepaid += s.persons;
+      else collected = cents(collected + (s.amount_paid == null ? due : num(s.amount_paid)));
+    }
+    // Payments taken on the spot are booked as arrangement income on the extra's programme item.
+    const booked = x.programme_item_id
+      ? cents(entries.filter((e) => e.kind === 'income_arrangement' && e.programme_item_id === x.programme_item_id).reduce((s, e) => s + num(e.amount), 0))
+      : collected;
+    if (unpaid) out.push({ level: 'warn', code: 'extraUnpaid', title: x.title, bookings: unpaid, persons: unpaidPersons, outstanding });
+    if (booked !== collected) out.push({ level: 'warn', code: 'extraMismatch', title: x.title, collected, booked });
+    if (!unpaid && booked === collected) out.push({ level: 'ok', code: 'extraOk', title: x.title, persons, collected, prepaid });
+  }
+
+  const transfers = entries.filter((e) => e.kind === 'transfer');
+  if (transfers.length) {
+    const byId = new Map<string, CashEntry[]>();
+    for (const e of transfers) byId.set(e.transfer_id ?? e.id, [...(byId.get(e.transfer_id ?? e.id) ?? []), e]);
+    const off = [...byId.values()].filter((pair) => pair.length !== 2 || cents(pair.reduce((s, e) => s + num(e.amount), 0)) !== 0);
+    if (off.length) {
+      const flat = off.flat();
+      out.push({ level: 'warn', code: 'transfersOff', sum: cents(flat.reduce((s, e) => s + num(e.amount), 0)), vouchers: flat.map((e) => e.voucher_no).sort((a, b) => a - b) });
+    } else out.push({ level: 'ok', code: 'transfersOk', count: byId.size });
+  }
+
+  const b = balances(book, entries);
+  for (const a of ACCOUNTS) if (b.closing[a] < 0) out.push({ level: 'warn', code: 'negativeBalance', account: a, amount: b.closing[a] });
+
+  const rank = { warn: 0, ok: 1, info: 2 } as const;
+  out.sort((p, q) => rank[p.level] - rank[q.level]);
+  out.push({ level: 'info', code: 'countCash', amount: b.closing.cash });
+  return out;
+}
+
+/** True when entries were added after the report was last sent (edits are not tracked). */
+export function changedSinceSent(sentAt: string | null | undefined, entries: Pick<CashEntry, 'created_at'>[]): boolean {
+  if (!sentAt) return false;
+  return entries.some((e) => e.created_at > sentAt);
 }
