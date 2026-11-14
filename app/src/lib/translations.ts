@@ -73,6 +73,9 @@ const fi = {
   asCustomer: 'Asiakkaana',
   asGuide: 'Oppaana',
   demoPasswordWrong: 'Salasana on väärä.',
+  tryDemo: 'Kokeile demoa',
+  tryDemoHint: 'Avaa esimerkkimatka ilman tunnuksia, asiakkaana tai oppaana. Demo palautuu alkutilaan joka yö.',
+  demoUnavailable: 'Demoa ei saatu avattua. Yritä hetken päästä uudelleen.',
 
   // Trip loading
   tripLoadFailed: 'Matkan tietoja ei saatu ladattua',
@@ -504,6 +507,9 @@ const en: Messages = {
   asCustomer: 'As customer',
   asGuide: 'As guide',
   demoPasswordWrong: 'The password is wrong.',
+  tryDemo: 'Try the demo',
+  tryDemoHint: 'Open a sample trip without an account, as a customer or as the guide. The demo resets every night.',
+  demoUnavailable: 'The demo could not be opened. Please try again in a moment.',
 
   tripLoadFailed: 'The trip could not be loaded',
   noBooking: 'No booking found',
@@ -924,6 +930,9 @@ const sv: Messages = {
   asCustomer: 'Som kund',
   asGuide: 'Som guide',
   demoPasswordWrong: 'Lösenordet är fel.',
+  tryDemo: 'Prova demon',
+  tryDemoHint: 'Öppna en exempelresa utan konto, som kund eller som guide. Demon återställs varje natt.',
+  demoUnavailable: 'Demon kunde inte öppnas. Försök igen om en stund.',
 
   tripLoadFailed: 'Resan kunde inte laddas',
   noBooking: 'Ingen bokning hittades',
@@ -1343,6 +1352,9 @@ const no: Messages = {
   asCustomer: 'Som kunde',
   asGuide: 'Som guide',
   demoPasswordWrong: 'Passordet er feil.',
+  tryDemo: 'Prøv demoen',
+  tryDemoHint: 'Åpne en eksempelreise uten konto, som kunde eller som guide. Demoen tilbakestilles hver natt.',
+  demoUnavailable: 'Demoen kunne ikke åpnes. Prøv igjen om litt.',
   tripLoadFailed: 'Reisen kunne ikke lastes inn',
   noBooking: 'Fant ingen bestilling',
   noBookingBody: 'Fant ingen reise for {email}. Logg inn med e-postadressen du oppga da du bestilte.',

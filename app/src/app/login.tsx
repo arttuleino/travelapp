@@ -3,15 +3,16 @@ import { StyleSheet, View } from 'react-native';
 
 import { LanguageChips } from '@/components/language-picker';
 import { Body, Button, Card, Field, H1, Muted, Screen } from '@/components/ui';
-import { sendCode, signInDemo, signInWithPassword, verifyCode } from '@/lib/auth';
+import { DemoPasswordError, sendCode, signInDemo, signInSupabaseDemo, signInWithPassword, verifyCode } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { DEMO_MODE, PASSWORD_LOGIN } from '@/lib/supabase';
-import { space } from '@/theme';
+import { DEMO_LOGIN, DEMO_MODE, PASSWORD_LOGIN } from '@/lib/supabase';
+import { space, usePalette } from '@/theme';
 
 const FEATURES = ['feature1', 'feature2', 'feature3', 'feature4'] as const;
 
 export default function Login() {
   const { t } = useI18n();
+  const c = usePalette();
   const [step, setStep] = useState<'email' | 'code' | 'password'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -19,6 +20,10 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [demoBusy, setDemoBusy] = useState<'traveller' | 'guide' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // "Kokeile demoa" on the real site: the password field appears only if the demo has one.
+  const [demoPassword, setDemoPassword] = useState('');
+  const [demoNeedsPassword, setDemoNeedsPassword] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
@@ -67,6 +72,24 @@ export default function Login() {
       await signInDemo(password, role);
     } catch {
       setError(t('demoPasswordWrong'));
+    } finally {
+      setDemoBusy(null);
+    }
+  }
+
+  async function openDemo(role: 'traveller' | 'guide') {
+    setDemoBusy(role);
+    setDemoError(null);
+    try {
+      await signInSupabaseDemo(role, demoPassword || undefined);
+      // The root layout switches to the app once the session exists.
+    } catch (e) {
+      if (e instanceof DemoPasswordError) {
+        setDemoError(demoNeedsPassword ? t('demoPasswordWrong') : null);
+        setDemoNeedsPassword(true);
+      } else {
+        setDemoError(t('demoUnavailable'));
+      }
     } finally {
       setDemoBusy(null);
     }
@@ -142,6 +165,31 @@ export default function Login() {
               }}
               style={{ alignSelf: 'flex-start' }}
             />
+          ) : null}
+          {DEMO_LOGIN ? (
+            <Card style={{ gap: space.m, marginTop: space.l }}>
+              <Body style={{ fontWeight: '700' }}>{t('tryDemo')}</Body>
+              <Muted>{t('tryDemoHint')}</Muted>
+              {demoNeedsPassword ? (
+                <Field
+                  label={t('demoPassword')}
+                  value={demoPassword}
+                  onChangeText={setDemoPassword}
+                  placeholder={t('pastePassword')}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  returnKeyType="go"
+                  onSubmitEditing={() => demoPassword && openDemo('traveller')}
+                  error={demoError}
+                />
+              ) : demoError ? (
+                <Muted style={{ color: c.live }}>{demoError}</Muted>
+              ) : null}
+              <View style={styles.buttons}>
+                <Button label={t('asCustomer')} onPress={() => openDemo('traveller')} disabled={!!demoBusy || (demoNeedsPassword && !demoPassword)} busy={demoBusy === 'traveller'} />
+                <Button label={t('asGuide')} variant="ghost" onPress={() => openDemo('guide')} disabled={!!demoBusy || (demoNeedsPassword && !demoPassword)} busy={demoBusy === 'guide'} />
+              </View>
+            </Card>
           ) : null}
         </View>
       ) : step === 'password' ? (
