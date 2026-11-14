@@ -49,7 +49,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "node --test src/lib/*.test.ts scripts/*.test.mjs ../supabase/functions/push/*.test.ts",
+    "test": "node --test src/lib/*.test.ts scripts/*.test.mjs ../supabase/functions/push/*.test.ts ../supabase/functions/ai-guide/*.test.ts",
     "typecheck": "tsc --noEmit",
     "import-trip": "node scripts/import-trip.mjs"
   },
