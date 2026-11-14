@@ -68,9 +68,32 @@ const ICONS = {
     { t: 'rect', x: '4', y: '3', width: '16', height: '14', rx: '3' },
     { t: 'path', d: 'M4 10h16M8 17v3M16 17v3M8 13.5h.01M16 13.5h.01' },
   ],
+  // Live map controls.
+  locate: [
+    { t: 'circle', cx: '12', cy: '12', r: '7' },
+    { t: 'circle', cx: '12', cy: '12', r: '2.5' },
+    { t: 'path', d: 'M12 2v3M12 19v3M2 12h3M19 12h3' },
+  ],
+  expand: [{ t: 'path', d: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5' }],
+  external: [{ t: 'path', d: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5' }],
 } satisfies Record<string, Shape[]>;
 
 export type IconName = keyof typeof ICONS;
+
+/** The same icon as an SVG markup string, for HTML map markers (browser only). */
+export function iconSvg(name: IconName, size: number, color: string, strokeWidth = 2) {
+  const shapes: Shape[] = ICONS[name];
+  const body = shapes
+    .map((s) =>
+      s.t === 'path'
+        ? `<path d="${s.d}"/>`
+        : s.t === 'rect'
+          ? `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${s.rx ?? 0}"/>`
+          : `<circle cx="${s.cx}" cy="${s.cy}" r="${s.r}"/>`,
+    )
+    .join('');
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}
 
 export function Icon({ name, size = 22, color, strokeWidth = 2 }: { name: IconName; size?: number; color: string; strokeWidth?: number }) {
   const shapes: Shape[] = ICONS[name];
