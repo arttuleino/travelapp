@@ -15,14 +15,15 @@ import type { Place } from '@/lib/resort-map';
  * pins for the trip's places, the guide's live position and, if asked, the viewer's own.
  *
  * Tile servers can be swapped with EXPO_PUBLIC_MAP_TILES / EXPO_PUBLIC_MAP_TILES_ATTRIBUTION
- * (e.g. a paid MapTiler or Stadia key once traffic grows; the free servers ask for light use).
+ * (e.g. a paid MapTiler or Stadia key once traffic grows). The default OpenStreetMap tiles need no key
+ * but are meant for light use, with attribution (operations.osmfoundation.org/policies/tiles).
  */
 const BASES = {
   map: {
-    url: process.env.EXPO_PUBLIC_MAP_TILES || 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    url: process.env.EXPO_PUBLIC_MAP_TILES || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution:
       process.env.EXPO_PUBLIC_MAP_TILES_ATTRIBUTION ||
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxNativeZoom: 19,
   },
   terrain: {
