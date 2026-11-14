@@ -48,6 +48,7 @@ function RootStack() {
         <Stack.Screen name="extras" />
         <Stack.Screen name="extra-edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="extra/[id]" />
+        <Stack.Screen name="answers" />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />

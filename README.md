@@ -96,17 +96,37 @@ Tuonti kertoo virheet rivinumeroineen. Uudelleentuonti päivittää matkan ja he
 
 Sovellus ei näytä bussiaikatauluja itse. Nyt-sivun Paikallisliikenne-kortti suosittelee kohteen oman alueen joukkoliikennesovellusta (esim. Salzburg Verkehr, VVT SmartRide, südtirolmobil) ja linkittää skibussin aikatauluihin. Kohteet ja sovellukset ovat tiedostossa `app/src/lib/local-transport.ts`, ja kohde tunnistetaan matkan `destination`-kentästä. Lista tarkistettiin marraskuussa 2026, ja se kannattaa tarkistaa kausittain.
 
+## AI-opas
+
+Matkustajan Opas-välilehdellä on kaksi näkymää: chat oppaan kanssa ja **AI-opas**. AI-opas vastaa matkan omista tiedoista: ohjelmasta, hotellista, lennoista, oppaan tiedotteista ja oppaan **vastauspankista** (Profiili → Vastauspankki, vain oppaille). Jos tieto puuttuu tai kysymys koskee varausmuutosta, rahaa, terveyttä tai turvallisuutta, vastauksessa on nappi "Lähetä kysymys oppaalle", joka lähettää kysymyksen tavallisena viestinä oppaan chattiin (ja push-ilmoituksena).
+
+- Claude-kutsu tehdään Edge Functionissa `supabase/functions/ai-guide`. API-avain on vain Supabasen salaisuuksissa, ei koskaan sovelluksessa.
+- Funktio lukee matkan tiedot **kysyjän omilla oikeuksilla** (RLS), joten AI näkee vain sen, minkä matkustaja itsekin näkee sovelluksessa.
+- Keskustelu AI-oppaan kanssa säilyy vain puhelimessa sovelluksen ollessa auki; sitä ei tallenneta tietokantaan.
+- Oletusmalli on `claude-opus-5-5` (pieni ajattelutaso, vastaus rakenteisena JSONina, matkan tiedot välimuistissa). Halvempaan malliin vaihdetaan salaisuudella `AI_GUIDE_MODEL`, esim. `claude-haiku-5-5`.
+
+Käyttöönotto:
+
+```bash
+# 1. Vastauspankin taulu: aja SQL-editorissa supabase/migrations/20261116090000_answer_bank.sql
+# 2. Claude API -avain (console.anthropic.com) ja funktio
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+npx supabase functions deploy ai-guide
+```
+
+Demotilassa (`EXPO_PUBLIC_DEMO_MODE=1`) sovellus kutsuu demopalvelimen osoitetta `/demo-api/ai-guide` samalla rajapinnalla (`{trip_id, question, history, locale, now_local}` → `{answer, handoff, handoff_reason, sources}`). Jos palvelimella ei ole sitä, AI-opas kertoo, ettei se ole käytössä, ja tarjoaa kysymyksen lähettämistä oppaalle.
+
 ## Tarkistukset
 
 ```bash
 cd app
-npm test            # aikalogiikka, lukemattomat viestit, CSV-tuonti ja push-funktion apufunktiot
+npm test            # aikalogiikka, lukemattomat viestit, CSV-tuonti, push- ja AI-opas-funktioiden apufunktiot
 npm run typecheck
 npx expo lint
 ```
 
 ## Seuraavat vaiheet
 
-3. Kartta, oppaan live-sijainti ja vastauspankki
+3. Oppaan live-sijainti ja AI-työkalut oppaalle (vastausluonnokset, käännökset, ehdotukset)
 4. Matkakassa ja viikkoraportti
 5. Lisäpalveluiden varaus ja maksut matkanjärjestäjän järjestelmien kautta

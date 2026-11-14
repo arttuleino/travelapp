@@ -8,6 +8,7 @@ import { LanguageList } from '@/components/language-picker';
 import { Button, Card, Eyebrow, H1, H2, Muted, Screen } from '@/components/ui';
 import { useMembers } from '@/lib/chat';
 import { summarize } from '@/lib/extras-calc';
+import { useAnswers } from '@/lib/answers';
 import { useExtras, useSignups } from '@/lib/extras';
 import { signOut, useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -60,6 +61,7 @@ function GuideLinks() {
   const guests = useMembers(trip.id).filter((m) => m.role === 'traveller');
   const { extras } = useExtras(trip.id);
   const signups = useSignups(trip.id);
+  const answers = useAnswers(trip.id).rows;
   const people = guests.reduce((n, g) => n + g.party_size, 0);
   const unpaid = extras.reduce(
     (n, x) =>
@@ -78,6 +80,11 @@ function GuideLinks() {
         detail={unpaid ? t('extraUnpaid', { n: unpaid }) : extras.length ? t('allPaid') : t('newExtra')}
         alert={unpaid > 0}
         onPress={() => router.push('/extras')}
+      />
+      <LinkRow
+        title={t('answerBank')}
+        detail={answers.length ? t('answerBankSummary', { n: answers.length }) : t('answerNew')}
+        onPress={() => router.push('/answers')}
       />
     </View>
   );
