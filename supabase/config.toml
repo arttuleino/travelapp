@@ -433,3 +433,6 @@ enabled = true
 # Push notifications: called by Database Webhooks with a shared secret header, not a user JWT.
 [functions.push]
 verify_jwt = false
+
+[functions.demo-login]
+verify_jwt = false

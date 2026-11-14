@@ -39,3 +39,6 @@ export const DEMO_NOW = process.env.EXPO_PUBLIC_DEMO_NOW || undefined;
 
 /** Shows a password sign-in for test accounts created in the Supabase dashboard (no email needed). */
 export const PASSWORD_LOGIN = process.env.EXPO_PUBLIC_PASSWORD_LOGIN === '1';
+
+/** Shows "Kokeile demoa" on the login page: opens the demo trip through the demo-login edge function. */
+export const DEMO_LOGIN = process.env.EXPO_PUBLIC_DEMO_LOGIN === '1';

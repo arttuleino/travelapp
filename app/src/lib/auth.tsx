@@ -39,12 +39,33 @@ export async function signInWithPassword(email: string, password: string) {
   if (error) throw error;
 }
 
-/** Demo mode: one shared password opens the sample trip as a traveller (asiakas) or as the guide (opas). */
+/** Demo mode (DanBot demo API): one shared password opens the sample trip as a traveller or the guide. */
 export const DEMO_ACCOUNTS = { traveller: 'traveller@example.com', guide: 'guide@example.com' } as const;
 
 export async function signInDemo(password: string, role: keyof typeof DEMO_ACCOUNTS) {
   const { error } = await supabase.auth.signInWithPassword({ email: DEMO_ACCOUNTS[role], password });
   if (error) throw error;
+}
+
+/** Thrown by signInSupabaseDemo when the demo-login function has a DEMO_PASSWORD set. */
+export class DemoPasswordError extends Error {}
+
+/**
+ * "Kokeile demoa": the demo-login edge function prepares the demo trip and returns a one-time
+ * sign-in token for the demo traveller or guide, which is exchanged here for a normal session.
+ */
+export async function signInSupabaseDemo(role: 'traveller' | 'guide', password?: string) {
+  const { data, error } = await supabase.functions.invoke<{ token_hash?: string }>('demo-login', {
+    body: { role, ...(password ? { password } : {}) },
+  });
+  if (error) {
+    const status = (error as { context?: Response }).context?.status;
+    if (status === 401) throw new DemoPasswordError('password_required');
+    throw error;
+  }
+  if (!data?.token_hash) throw new Error('demo_unavailable');
+  const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: data.token_hash, type: 'magiclink' });
+  if (verifyError) throw verifyError;
 }
 
 export async function signOut() {

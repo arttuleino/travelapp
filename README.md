@@ -116,6 +116,19 @@ npx supabase functions deploy ai-guide
 
 Demotilassa (`EXPO_PUBLIC_DEMO_MODE=1`) sovellus kutsuu demopalvelimen osoitetta `/demo-api/ai-guide` samalla rajapinnalla (`{trip_id, question, history, locale, now_local}` → `{answer, handoff, handoff_reason, sources}`). Jos palvelimella ei ole sitä, AI-opas kertoo, ettei se ole käytössä, ja tarjoaa kysymyksen lähettämistä oppaalle.
 
+## Demo samassa Supabasessa ("Kokeile demoa")
+
+Myyntidemo käyttää samaa Supabase-projektia kuin oikeat matkat, joten jokainen ominaisuus toimii demossa ilman erillistä demopalvelinta.
+
+- Kun `EXPO_PUBLIC_DEMO_LOGIN=1`, kirjautumissivulla näkyy **Kokeile demoa** -kortti (Asiakkaana / Oppaana). Napit kutsuvat Edge Functionia `supabase/functions/demo-login`. Funktio valmistelee demomatkan ja palauttaa kertakäyttöisen kirjautumistunnisteen. Sähköpostia ei lähetetä, eikä sovelluksessa ole salasanaa.
+- Demotunnukset `demo.asiakas@groupglide.com` ja `demo.opas@groupglide.com` ovat vain demomatkan jäseniä. Rivitason oikeudet pitävät ne erillään oikeista matkoista.
+- Demomatka on tiedostossa `supabase/migrations/20261118090000_demo_trip.sql`: Saalbachin viikko, kuusi varausta (FI, SE, NO), lennot, lisäpalvelut ja maksut, kassakirjan esimerkkiviikko, vastauspankki, tiedote ja viestejä. Päivämäärät lasketaan kuluvasta päivästä niin, että tänään on matkan 3. päivä. Päivän ensimmäinen demokirjautuminen palauttaa matkan alkutilaan (`ensure_demo_trip()`).
+- Jos funktiolle asetetaan salaisuus `DEMO_PASSWORD`, demo kysyy salasanan.
+
+Käyttöönotto: aja migraatio SQL-editorissa ja julkaise funktio `demo-login` niin, että JWT-tarkistus on pois päältä (`config.toml` hoitaa tämän CLI:llä: `npx supabase functions deploy demo-login`).
+
+Vanha demotila (`EXPO_PUBLIC_DEMO_MODE=1`, DanBotin `/demo-api`) toimii vielä varalla. Se poistetaan, kun Supabase-demo on käytössä.
+
 ## Tarkistukset
 
 ```bash
