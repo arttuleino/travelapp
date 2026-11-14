@@ -39,14 +39,6 @@ export async function signInWithPassword(email: string, password: string) {
   if (error) throw error;
 }
 
-/** Demo mode (DanBot demo API): one shared password opens the sample trip as a traveller or the guide. */
-export const DEMO_ACCOUNTS = { traveller: 'traveller@example.com', guide: 'guide@example.com' } as const;
-
-export async function signInDemo(password: string, role: keyof typeof DEMO_ACCOUNTS) {
-  const { error } = await supabase.auth.signInWithPassword({ email: DEMO_ACCOUNTS[role], password });
-  if (error) throw error;
-}
-
 /** Thrown by signInSupabaseDemo when the demo-login function has a DEMO_PASSWORD set. */
 export class DemoPasswordError extends Error {}
 

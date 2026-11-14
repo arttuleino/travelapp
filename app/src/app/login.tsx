@@ -3,9 +3,9 @@ import { StyleSheet, View } from 'react-native';
 
 import { LanguageChips } from '@/components/language-picker';
 import { Body, Button, Card, Field, H1, Muted, Screen } from '@/components/ui';
-import { DemoPasswordError, sendCode, signInDemo, signInSupabaseDemo, signInWithPassword, verifyCode } from '@/lib/auth';
+import { DemoPasswordError, sendCode, signInSupabaseDemo, signInWithPassword, verifyCode } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { DEMO_LOGIN, DEMO_MODE, PASSWORD_LOGIN } from '@/lib/supabase';
+import { DEMO_LOGIN, PASSWORD_LOGIN } from '@/lib/supabase';
 import { space, usePalette } from '@/theme';
 
 const FEATURES = ['feature1', 'feature2', 'feature3', 'feature4'] as const;
@@ -20,7 +20,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [demoBusy, setDemoBusy] = useState<'traveller' | 'guide' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // "Kokeile demoa" on the real site: the password field appears only if the demo has one.
+  // "Kokeile demoa": the password field appears only if the demo has one.
   const [demoPassword, setDemoPassword] = useState('');
   const [demoNeedsPassword, setDemoNeedsPassword] = useState(false);
   const [demoError, setDemoError] = useState<string | null>(null);
@@ -65,18 +65,6 @@ export default function Login() {
     }
   }
 
-  async function submitDemo(role: 'traveller' | 'guide') {
-    setDemoBusy(role);
-    setError(null);
-    try {
-      await signInDemo(password, role);
-    } catch {
-      setError(t('demoPasswordWrong'));
-    } finally {
-      setDemoBusy(null);
-    }
-  }
-
   async function openDemo(role: 'traveller' | 'guide') {
     setDemoBusy(role);
     setDemoError(null);
@@ -116,28 +104,7 @@ export default function Login() {
         </View>
       </Card>
 
-      {DEMO_MODE ? (
-        <View style={styles.form}>
-          <Field
-            label={t('demoPassword')}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t('pastePassword')}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password"
-            textContentType="password"
-            returnKeyType="go"
-            onSubmitEditing={() => password && submitDemo('traveller')}
-            error={error}
-          />
-          <Muted>{t('demoHint')}</Muted>
-          <View style={styles.buttons}>
-            <Button label={t('asCustomer')} onPress={() => submitDemo('traveller')} disabled={!password || !!demoBusy} busy={demoBusy === 'traveller'} />
-            <Button label={t('asGuide')} variant="ghost" onPress={() => submitDemo('guide')} disabled={!password || !!demoBusy} busy={demoBusy === 'guide'} />
-          </View>
-        </View>
-      ) : step === 'email' ? (
+      {step === 'email' ? (
         <View style={styles.form}>
           <Field
             label={t('email')}

@@ -1,4 +1,4 @@
-import { DEMO_MODE, DEMO_NOW, supabase } from './supabase';
+import { DEMO_NOW, supabase } from './supabase';
 
 // The AI guide answers a traveller's question from their own trip's data. The call goes to the
 // `ai-guide` Supabase Edge Function, which holds the Claude API key; the app never sees the key.
@@ -20,7 +20,6 @@ const failureFor = (status: number | undefined): AiFailure =>
 
 export async function askAiGuide(tripId: string, question: string, history: AiTurn[], locale: string): Promise<AiAnswer> {
   const body = { trip_id: tripId, question, history, locale, now_local: DEMO_NOW };
-  if (DEMO_MODE) return askDemoServer(body);
   const { data, error } = await supabase.functions.invoke<AiAnswer>('ai-guide', { body });
   if (error) {
     const status = (error as { context?: { status?: number } }).context?.status;
@@ -28,18 +27,6 @@ export async function askAiGuide(tripId: string, question: string, history: AiTu
   }
   if (!data || typeof data.answer !== 'string') throw new AiGuideError('failed');
   return data;
-}
-
-/** Demo mode has no Supabase: the demo server may offer the same endpoint at /demo-api/ai-guide. */
-async function askDemoServer(body: object): Promise<AiAnswer> {
-  const { data } = await supabase.auth.getSession();
-  const res = await fetch(`${process.env.EXPO_PUBLIC_DEMO_API_URL ?? ''}/demo-api/ai-guide`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` },
-    body: JSON.stringify(body),
-  }).catch(() => null);
-  if (!res?.ok) throw new AiGuideError(failureFor(res?.status));
-  return (await res.json()) as AiAnswer;
 }
 
 /** The turns to send as context: answered questions only, newest last, at most `max`. */

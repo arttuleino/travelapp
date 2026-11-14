@@ -114,7 +114,6 @@ npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 npx supabase functions deploy ai-guide
 ```
 
-Demotilassa (`EXPO_PUBLIC_DEMO_MODE=1`) sovellus kutsuu demopalvelimen osoitetta `/demo-api/ai-guide` samalla rajapinnalla (`{trip_id, question, history, locale, now_local}` → `{answer, handoff, handoff_reason, sources}`). Jos palvelimella ei ole sitä, AI-opas kertoo, ettei se ole käytössä, ja tarjoaa kysymyksen lähettämistä oppaalle.
 
 ## Demo samassa Supabasessa ("Kokeile demoa")
 
@@ -127,7 +126,7 @@ Myyntidemo käyttää samaa Supabase-projektia kuin oikeat matkat, joten jokaine
 
 Käyttöönotto: aja migraatio SQL-editorissa ja julkaise funktio `demo-login` niin, että JWT-tarkistus on pois päältä (`config.toml` hoitaa tämän CLI:llä: `npx supabase functions deploy demo-login`).
 
-Vanha demotila (`EXPO_PUBLIC_DEMO_MODE=1`, DanBotin `/demo-api`) toimii vielä varalla. Se poistetaan, kun Supabase-demo on käytössä.
+Selainversio (groupglide.com) käännetään samasta koodista ja käyttää samaa Supabasea. Palvelimelle riittää, että se jakaa käännetyn `dist`-kansion. Erillistä demopalvelinta tai demorajapintaa ei ole.
 
 ## Tarkistukset
 
